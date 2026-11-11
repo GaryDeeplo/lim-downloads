@@ -3,6 +3,7 @@ uvicorn[standard]
 xxhash
 pillow
 pystray
+pywebview
 windows-toasts
 pytest
 httpx

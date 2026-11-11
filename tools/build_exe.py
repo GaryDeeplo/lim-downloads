@@ -27,6 +27,8 @@ def main():
         "--collect-all", "winrt",
         "--collect-all", "windows_toasts",
         "--hidden-import", "pystray._win32",
+        "--collect-all", "webview",
+        "--hidden-import", "clr",
         "--distpath", str(ROOT / "dist"),
         "--workpath", str(ROOT / "build"),
         "--specpath", str(ROOT / "build"),

@@ -487,6 +487,14 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         launch(lambda: os.startfile(path), path.name)
         return {"ok": True}
 
+    @app.post("/api/show")
+    def show_window():
+        """Un deuxième lancement de l'exe ramène la fenêtre déjà ouverte."""
+        show = getattr(app.state, "show_window", None)
+        if show:
+            show()
+        return {"window": bool(show)}
+
     @app.post("/api/open-receipts")
     def open_receipts():
         if not receipts_path.exists():

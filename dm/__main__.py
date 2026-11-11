@@ -1,18 +1,20 @@
 """Lancement : python -m dm (ou pythonw -m dm, sans console).
 
-Serveur local + tri automatique + icône dans la barre des tâches + notifications Windows.
-Une seule instance : si l'appli tourne déjà, on ouvre simplement l'interface.
+Serveur local + fenêtre de l'appli (WebView2) + tri automatique + icône près de l'horloge + notifications Windows.
+Une seule instance : si l'appli tourne déjà, on ramène simplement sa fenêtre.
 """
 import os
 import socket
 import sys
+import json
 import threading
+import time
 import urllib.request
 import webbrowser
 
 import uvicorn
 
-from .autostart import app_icon, refresh, set_startup, startup_enabled
+from .autostart import ICON, app_icon, refresh, set_startup, startup_enabled
 from .config import load_config
 from .server import create_app
 
@@ -25,7 +27,28 @@ def already_running() -> bool:
         return s.connect_ex(("127.0.0.1", PORT)) == 0
 
 
-def notifier(app):
+def show_running():
+    """Deuxième lancement : demande à l'appli déjà ouverte de montrer sa fenêtre (navigateur si elle n'en a pas)."""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(f"{URL}/api/show", method="POST"), timeout=5) as r:
+            if json.load(r).get("window"):
+                return
+    except (OSError, ValueError):
+        pass
+    webbrowser.open(URL)
+
+
+def open_window(cfg, hidden: bool):
+    """La fenêtre WebView2, ou None si elle n'est pas disponible (on passera alors par le navigateur)."""
+    try:
+        from .window import AppWindow
+        return AppWindow(URL, hidden, cfg.data_dir / "webview", ICON)
+    except Exception as e:  # pywebview absent ou WebView2 indisponible
+        print(f"fenêtre de l'appli indisponible, navigateur à la place : {e}")
+        return None
+
+
+def notifier(app, open_ui):
     """Notification Windows après un tri auto, avec « Annuler » et « Ouvrir »."""
     try:
         from windows_toasts import InteractableWindowsToaster, Toast, ToastButton
@@ -53,7 +76,7 @@ def notifier(app):
                         pass
                 toaster.show_toast(Toast(["Tri automatique annulé", "Les fichiers sont revenus dans Téléchargements."]))
             else:
-                webbrowser.open(URL)
+                open_ui()
 
         toast.on_activated = activated
         toaster.show_toast(toast)
@@ -65,7 +88,7 @@ def main():
     hidden = "--hidden" in sys.argv  # --hidden : lancé à l'ouverture de session, juste l'icône
     if already_running():
         if not hidden:
-            webbrowser.open(URL)
+            show_running()
         return
 
     cfg = load_config()
@@ -75,16 +98,33 @@ def main():
     app = create_app(cfg, start_auto=True)
     if getattr(sys, "frozen", False):
         threading.Thread(target=refresh, daemon=True).start()
-    app.state.notify = notifier(app)
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=PORT, log_level="warning"))
     threading.Thread(target=server.run, daemon=True).start()
-    if not hidden:
-        threading.Timer(1.2, lambda: webbrowser.open(URL)).start()
+    for _ in range(100):  # la fenêtre charge la page dès son ouverture : on attend que le serveur réponde
+        if server.started:
+            break
+        time.sleep(0.1)
+
+    window = open_window(cfg, hidden)
+
+    def open_ui():
+        if window:
+            window.show()
+        else:
+            webbrowser.open(URL)
+
+    app.state.show_window = window.show if window else None
+    app.state.notify = notifier(app, open_ui)
+    if not window and not hidden:
+        webbrowser.open(URL)
 
     try:
         import pystray
-    except ImportError:  # pas d'icône : on garde le serveur au premier plan
-        threading.Event().wait()
+    except ImportError:  # pas d'icône : la fenêtre (ou le serveur) garde la main
+        if window:
+            window.run()
+        else:
+            threading.Event().wait()
         return
 
     auto = app.state.auto
@@ -107,16 +147,23 @@ def main():
         auto.stop()
         server.should_exit = True
         icon.stop()
+        if window:
+            window.quit()
 
     menu = pystray.Menu(
-        pystray.MenuItem("Ouvrir Downloads Manager", lambda: webbrowser.open(URL), default=True),
+        pystray.MenuItem("Ouvrir Downloads Manager", lambda: open_ui(), default=True),
         pystray.MenuItem("Tri automatique", toggle, checked=lambda _: auto.enabled),
         pystray.MenuItem("Trier maintenant", run_now),
         pystray.MenuItem("Lancer au démarrage de Windows", toggle_startup, checked=lambda _: startup_enabled()),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quitter", quit_app),
     )
-    pystray.Icon("downloads-manager", app_icon(64), "Downloads Manager", menu).run()
+    tray = pystray.Icon("downloads-manager", app_icon(64), "Downloads Manager", menu)
+    if window:  # la fenêtre a besoin du fil principal ; l'icône tourne à côté
+        tray.run_detached()
+        window.run()
+    else:
+        tray.run()
 
 
 if __name__ == "__main__":
