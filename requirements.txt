@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+xxhash
+pillow
+pystray
+windows-toasts
+pytest
+httpx
+pyinstaller

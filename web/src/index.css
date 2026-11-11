@@ -1,0 +1,161 @@
+@import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* Tapis de tri : papier chaud en clair, encre profonde en sombre. Une couleur par dossier cible. */
+:root {
+  color-scheme: light dark;
+  --bg: #ebe7dd;
+  --surface: rgb(252 250 245 / 0.78);
+  --surface-strong: #fbf9f4;
+  --paper: #f8f6f0;
+  --ink: #1b1a17;
+  --muted: #615d55;
+  --faint: #a7a298;               /* traits et pointillés seulement, jamais du texte */
+  --line: rgb(27 26 23 / 0.1);
+  --dot: rgb(27 26 23 / 0.13);
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 18px 40px -22px rgb(60 40 10 / 0.35);
+  --card-shadow: 0 1px 2px rgb(40 30 10 / 0.06), 0 8px 22px -14px rgb(40 30 10 / 0.3);
+
+  --accent: #ff5a1f;
+  --accent-strong: #c2410c;       /* fond sous du texte blanc (5,2:1) */
+  --accent-text: #b03d0b;         /* orange lisible sur le papier */
+  --c-videos: #5b57d9;
+  --c-images: #0d9a80;
+  --c-documents: #c98f00;
+  --c-audio: #d93d71;
+  --c-archives: #8a6847;
+  --c-folders: #2e72b3;
+  --c-quarantine: #ff5a1f;
+  --c-onedrive: #0f6cbd;
+  --c-gdrive: #1a8f4c;
+  --c-external: #4b5563;
+  --c-neutral: #8c877c;
+  --c-pdf: #dd4334;
+  --c-sheet: #1f9653;
+  --c-slides: #dc7015;
+  --c-code: #0b98ac;
+  --c-exe: #5d646e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121211;
+    --surface: rgb(30 30 28 / 0.74);
+    --surface-strong: #1d1d1b;
+    --paper: #222220;
+    --ink: #f0ece3;
+    --muted: #9a958a;
+    --accent-strong: #cc4a14;
+    --accent-text: #ff6a33;
+    --faint: #5f5c55;
+    --line: rgb(255 255 255 / 0.08);
+    --dot: rgb(255 255 255 / 0.075);
+    --shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 20px 50px -20px rgb(0 0 0 / 0.8);
+    --card-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 26px -14px rgb(0 0 0 / 0.8);
+
+    --c-videos: #8e8bff;
+    --c-images: #31c9a7;
+    --c-documents: #f0b52b;
+    --c-audio: #ff6c9b;
+    --c-archives: #c79b72;
+    --c-folders: #5ea6ea;
+    --c-onedrive: #4ba3f5;
+    --c-gdrive: #4cc37f;
+    --c-external: #a3acb9;
+    --c-neutral: #8f8a7f;
+    --c-pdf: #ff6b5c;
+    --c-sheet: #3ccf7f;
+    --c-slides: #ff9a45;
+    --c-code: #38c6da;
+    --c-exe: #98a0ab;
+  }
+}
+
+@theme inline {
+  --font-sans: "Bricolage Grotesque Variable", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-text: var(--accent-text);
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Tapis de découpe pointillé */
+.mat {
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.3px);
+  background-size: 20px 20px;
+}
+
+/* Grain discret par-dessus tout */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.tint { background: color-mix(in oklab, var(--c) 13%, var(--paper)); }
+.tint-strong { background: color-mix(in oklab, var(--c) 22%, var(--paper)); }
+.text-c { color: var(--c); }
+
+.scroll-area { scrollbar-width: thin; scrollbar-color: var(--faint) transparent; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+::selection { background: color-mix(in oklab, var(--accent) 30%, transparent); }
+
+@keyframes sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--accent) 22%, transparent), transparent);
+  animation: sweep 1.6s ease-in-out infinite;
+}
+
+/* Lim, le robot guide */
+.lim-arm, .lim-sway, .lim-blink { transform-box: view-box; }
+.lim-arm { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.lim-sway { animation: lim-sway 2.4s ease-in-out infinite; }
+.lim-blink { transform-origin: 40px 35px; animation: lim-blink 3.6s infinite; }
+@keyframes lim-sway { 0%, 100% { transform: rotate(7deg); } 50% { transform: rotate(-7deg); } }
+@keyframes lim-blink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

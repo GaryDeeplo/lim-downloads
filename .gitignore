@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+config.json
+debug.log
+web/node_modules/
+build/
+dist/
+.pytest_cache/
