@@ -14,11 +14,9 @@ ICON = ROOT / "assets" / "downloads-manager.ico"
 def main():
     if not (ROOT / "dm" / "static" / "index.html").exists():
         sys.exit("Interface absente : lance d'abord `npm run build` dans web/.")
-    if not ICON.exists():
-        sys.path.insert(0, str(ROOT))
-        from dm.autostart import app_icon
-        ICON.parent.mkdir(parents=True, exist_ok=True)
-        app_icon().save(ICON, sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (256, 256)])
+    sys.path.insert(0, str(ROOT))
+    from dm.autostart import save_icon
+    save_icon(ICON)  # toujours régénérée : l'icône suit le dessin de dm/autostart.py
     shutil.rmtree(ROOT / "build", ignore_errors=True)
     subprocess.run([
         sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--windowed",
