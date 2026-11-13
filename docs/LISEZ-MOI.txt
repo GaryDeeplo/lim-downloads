@@ -15,6 +15,7 @@ Pour couper ce lancement : clic droit sur l'icône près de l'horloge.
 À savoir
 - Rien n'est supprimé directement : tout passe 30 jours en quarantaine, chaque action s'annule.
 - Le tri automatique est éteint au départ : le bouton « Régler le tri auto » en haut le configure.
+- Langue : bouton FR / EN en haut à droite (l'appli suit la langue de Windows au départ).
 - Lim, le petit robot, fait le tour de l'appli au premier lancement ; sa tête en haut à droite le rappelle.
 - Tes données (historique, quarantaine) sont dans %LOCALAPPDATA%\DownloadsManager.
 

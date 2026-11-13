@@ -1,5 +1,6 @@
 /* Anglais des textes de l'interface (clé : le texte français exact passé à tr()). */
 const en: Record<string, string> = {
+  'Langue : français. Clic : passer en anglais': 'Language: English. Click to switch to French',
   /* Mots passés à plural() */
   'élément': 'item',
   'éléments': 'items',

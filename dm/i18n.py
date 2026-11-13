@@ -52,6 +52,7 @@ def tr(fr: str, **vars) -> str:
 
 
 EN: dict[str, str] = {
+    "langue inconnue": "unknown language",
     # — Dossiers de destination par défaut —
     "Téléchargements": "Downloads",
     "Téléchargements archivés": "Archived downloads",

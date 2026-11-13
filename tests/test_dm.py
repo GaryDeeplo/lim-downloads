@@ -616,3 +616,29 @@ def test_english_receipts(tmp_path):
     write_receipts(path, [{"name": "a.bin", "size": 2048, "label": "Auto · x → Quarantine", "src": "s", "dst": "d"}])
     lines = path.read_text(encoding="utf-8-sig").splitlines()
     assert lines[0].startswith("date,name,size,bytes,") and ",2 KB,2048," in lines[1]
+
+
+def test_api_language_choice_is_saved(cfg):
+    client = local_client(cfg)
+    assert client.get("/api/language").json() == {"lang": "fr", "setting": "auto"}
+    assert client.post("/api/language", json={"language": "en"}).json() == {"lang": "en", "setting": "en"}
+    assert 'lang="en"' in client.get("/").text
+    assert local_client(cfg).get("/api/language").json()["lang"] == "en"      # gardé au prochain lancement
+    assert client.post("/api/language", json={"language": "xx"}).status_code == 400
+    assert client.post("/api/language", json={"language": "auto"}).json()["setting"] == "auto"
+    assert client.post("/api/language", json={"language": "fr"}).json()["lang"] == "fr"
+
+
+def test_language_change_rescans_in_new_language(cfg):
+    cfg.protect_days = 0
+    write(cfg.downloads / "dl.crdownload", b"..")
+    client, plan = _ready_client(cfg)
+    assert any(b["title"] == "Incomplets" for b in plan["buckets"])
+    client.post("/api/language", json={"language": "en"})
+    for _ in range(100):
+        plan = client.get("/api/plan").json()
+        if plan["status"] == "ready":
+            break
+        time.sleep(0.05)
+    assert any(b["title"] == "Incomplete downloads" for b in plan["buckets"])
+    client.post("/api/language", json={"language": "fr"})

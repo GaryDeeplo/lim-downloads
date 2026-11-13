@@ -1,5 +1,6 @@
 """API locale + interface web. N'écoute que sur 127.0.0.1."""
 import itertools
+import json
 import os
 import re
 import subprocess
@@ -42,6 +43,10 @@ class AutoRequest(BaseModel):
     actions: list[str] | None = None
 
 
+class LanguageRequest(BaseModel):
+    language: str   # "auto" | "fr" | "en"
+
+
 class ApplyRequest(BaseModel):
     ids: list[int]
     target: str | None = None   # None = la cible par défaut du lot de chaque élément
@@ -64,6 +69,16 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     """start_auto : lance la surveillance en tâche de fond (l'appli réelle ; pas les tests)."""
     cfg = cfg or load_config()
     set_language(cfg.language)  # aussi pour une Config construite à la main (tests)
+    prefs_path = cfg.data_dir / "prefs.json"   # choix fait dans l'appli : passe avant config.json
+
+    def read_prefs() -> dict:
+        try:
+            return json.loads(prefs_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    if read_prefs().get("language") in ("fr", "en"):
+        set_language(read_prefs()["language"])
     journal = Journal(cfg)
     thumbs = ThumbCache(cfg.data_dir / "miniatures")
     receipts_path = cfg.documents_dest / RECEIPT_NAME
@@ -514,6 +529,29 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         path.mkdir(parents=True, exist_ok=True)
         launch(lambda: os.startfile(path), path.name)
         return {"ok": True}
+
+    @app.get("/api/language")
+    def get_language():
+        return {"lang": lang(), "setting": read_prefs().get("language", "auto")}
+
+    @app.post("/api/language")
+    def choose_language(req: LanguageRequest):
+        """Sélecteur de l'en-tête. Change les textes ; les noms des dossiers de rangement, eux, ne bougent pas."""
+        if req.language not in ("auto", "fr", "en"):
+            raise HTTPException(400, tr("langue inconnue"))
+        prefs = read_prefs()
+        if req.language == "auto":
+            prefs.pop("language", None)
+        else:
+            prefs["language"] = req.language
+        prefs_path.parent.mkdir(parents=True, exist_ok=True)
+        prefs_path.write_text(json.dumps(prefs), encoding="utf-8")
+        set_language(cfg.language if req.language == "auto" else req.language)
+        with lock:  # les noms des lots et les raisons sont écrits au scan : on rescanne dans la nouvelle langue
+            rescan = state["status"] == "ready" and not state["pending"]
+        if rescan:
+            start_scan()
+        return get_language()
 
     @app.post("/api/show")
     def show_window():

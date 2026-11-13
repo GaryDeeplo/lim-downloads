@@ -158,6 +158,7 @@ export const api = {
   openReceipts: () => req('/api/open-receipts', undefined, 'POST'),
   quarantine: () => req<Quarantine>('/api/quarantine'),
   restoreItem: (op: number) => req<{ name: string; ids: number[]; rescan: boolean }>(`/api/quarantine/${op}/restore`, undefined, 'POST'),
+  setLanguage: (language: 'auto' | 'fr' | 'en') => req<{ lang: string; setting: string }>('/api/language', { language }),
   auto: () => req<AutoStatus>('/api/auto'),
   updateAuto: (patch: { enabled?: boolean; delay_hours?: number; actions?: string[] }) => req<AutoStatus>('/api/auto', patch),
   previewAuto: () => req<AutoStatus>('/api/auto/preview', undefined, 'POST'),

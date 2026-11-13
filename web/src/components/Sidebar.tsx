@@ -1,8 +1,8 @@
 import { motion } from 'motion/react'
-import { History, RefreshCw, ShieldCheck, Trash2, Zap } from 'lucide-react'
-import type { CSSProperties } from 'react'
-import type { AutoStatus, Bucket, History as HistoryData } from '../api'
-import { tr } from '../i18n'
+import { Globe, History, RefreshCw, ShieldCheck, Trash2, Zap } from 'lucide-react'
+import { useState, type CSSProperties } from 'react'
+import { api, type AutoStatus, type Bucket, type History as HistoryData } from '../api'
+import { LANG, tr } from '../i18n'
 import { bucketColor, fmtBytes, fmtCount, fmtDateTime, TARGET_STYLE } from '../lib'
 import { LimIcon } from './Guide'
 import { AnimatedNumber, IconButton } from './ui'
@@ -144,6 +144,27 @@ function AutoPill({ auto, onOpen }: { auto: AutoStatus; onOpen: () => void }) {
   )
 }
 
+/** FR / EN : enregistre le choix côté serveur puis recharge l'appli dans l'autre langue. */
+function LanguageButton() {
+  const next = LANG === 'fr' ? 'en' : 'fr'
+  const [busy, setBusy] = useState(false)
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true)
+        try { await api.setLanguage(next); window.location.reload() } catch { setBusy(false) }
+      }}
+      title={tr('Langue : français. Clic : passer en anglais')}
+      aria-label={tr('Langue : français. Clic : passer en anglais')}
+      className="flex h-9 items-center gap-1.5 rounded-full border border-line px-3 font-mono text-[12px] font-medium text-muted transition-colors hover:bg-surface-strong hover:text-ink disabled:opacity-50"
+    >
+      <Globe size={14} /> {LANG.toUpperCase()}
+    </button>
+  )
+}
+
 export function Header({ root, buckets, scanning, historyCount, auto, onScan, onHistory, onAuto, onGuide }: {
   root: string
   buckets: Bucket[]
@@ -190,6 +211,7 @@ export function Header({ root, buckets, scanning, historyCount, auto, onScan, on
               <span className="absolute -right-1 -top-1 rounded-full bg-accent-strong px-1.5 font-mono text-[11px] leading-4 text-white">{historyCount}</span>
             )}
           </IconButton>
+          <LanguageButton />
           <IconButton tour="guide" title={tr("Lim, le guide de l'appli")} onClick={onGuide}>
             <LimIcon size={20} />
           </IconButton>
