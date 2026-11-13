@@ -18,7 +18,7 @@
   <a href="README.fr.md">Lire en français</a>
 </p>
 
-![Sorting the Downloads folder: batches on the left, file cards with thumbnails, folder dock at the bottom](docs/screenshot-sort.jpg)
+![Demo: photos fly to the Images folder, duplicates to the quarantine, then Lim introduces auto-sort](docs/demo.gif)
 
 Your Downloads folder fills up with installers you ran once, zips you already extracted, the same file downloaded three times and huge exports you could grab again. Lim scans it, sorts everything into batches and lets you clear each batch with one gesture, safely.
 
