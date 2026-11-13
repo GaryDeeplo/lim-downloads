@@ -12,7 +12,7 @@
   <a href="README.md">Read in English</a>
 </p>
 
-![Tri du dossier Téléchargements : lots à gauche, cartes avec miniatures, dock de dossiers en bas](docs/screenshot-sort.fr.jpg)
+![Démo : les photos s'envolent vers le dossier Images, les doublons vers la quarantaine, puis Lim présente le tri auto](docs/demo.fr.gif)
 
 Le dossier Téléchargements se remplit d'installeurs lancés une fois, de zips déjà extraits, du même fichier téléchargé trois fois et de gros exports qu'on pourrait récupérer à nouveau. Lim le scanne, range tout par lots et permet de vider chaque lot d'un geste, sans risque.
 

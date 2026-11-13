@@ -122,6 +122,7 @@ class ThumbCache:
         if miss.exists():
             return None
         img = shell_thumbnail(path, px)
+        self.dir.mkdir(parents=True, exist_ok=True)  # le cache a pu être vidé pendant que l'appli tourne
         if img is None:
             miss.touch()
             return None

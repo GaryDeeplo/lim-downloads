@@ -13,6 +13,7 @@ cd web && npm ci
 - Back end: `python -m dm` (or `start.bat`) serves the app on `http://127.0.0.1:8765`.
 - Front end: `cd web && npm run dev` while working on the interface, `npm run build` to update `dm/static`.
 - Demo data: `python tools\make_demo.py`, then `set DM_CONFIG=%TEMP%\dm-demo\config.json` so you never touch your real Downloads folder.
+- README GIFs: `python toolsecord_demo.py --lang en` (or `fr`) with the demo server on port 8766. Frames come from the app's web view only (DevTools screencast), never from the screen; keep the screen awake while it records.
 
 ## Before you open a pull request
 
