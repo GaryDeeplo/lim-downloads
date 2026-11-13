@@ -14,7 +14,7 @@ the full texts ship with each package and are available from the links below.
 | certifi | 2026.10.23 | Mozilla Public License 2.0 (MPL 2.0) | https://github.com/certifi/python-certifi |
 | cffi | 2.1.1 | MIT-0 | https://cffi.readthedocs.io/ |
 | click | 8.5.1 | BSD-3-Clause | https://click.palletsprojects.com/page/changes/ |
-| clr_loader | 0.3.1 | voir le paquet | https://github.com/pythonnet/clr-loader |
+| clr_loader | 0.3.1 | MIT | https://github.com/pythonnet/clr-loader |
 | colorama | 0.4.6 | BSD License | https://github.com/tartley/colorama |
 | fastapi | 0.162.4 | MIT | https://github.com/fastapi/fastapi |
 | h11 | 0.16.0 | MIT License | https://github.com/python-hyper/h11 |
@@ -40,7 +40,7 @@ the full texts ship with each package and are available from the links below.
 | uvicorn | 0.54.0 | BSD-3-Clause | https://uvicorn.dev/release-notes |
 | watchfiles | 1.3.0 | MIT License | https://github.com/samuelcolvin/watchfiles |
 | websockets | 17.4 | BSD-3-Clause | https://github.com/python-websockets/websockets |
-| Windows-Toasts | 1.3.1 | voir le paquet | https://github.com/DatGuy1/Windows-Toasts |
+| Windows-Toasts | 1.3.1 | Apache-2.0 | https://github.com/DatGuy1/Windows-Toasts |
 | winrt-runtime | 3.2.1 | MIT | https://pywinrt.readthedocs.io |
 | winrt-Windows.Data.Xml.Dom | 3.2.1 | MIT | https://pywinrt.readthedocs.io |
 | winrt-Windows.Foundation | 3.2.1 | MIT | https://pywinrt.readthedocs.io |
