@@ -3,24 +3,32 @@ import {
   FileVideo, Folder, HardDrive, Image, Music, Package, Presentation, Trash2, Cloud, CloudUpload, type LucideIcon,
 } from 'lucide-react'
 import type { Bucket, Source } from './api'
+import { LANG, LOCALE, tr } from './i18n'
 
 export function fmtBytes(b: number): string {
-  if (b < 1024) return `${Math.round(b)} o`
-  const units = ['Ko', 'Mo', 'Go', 'To']
+  const en = LANG === 'en'
+  if (b < 1024) return `${Math.round(b)} ${en ? 'B' : 'o'}`
+  const units = en ? ['KB', 'MB', 'GB', 'TB'] : ['Ko', 'Mo', 'Go', 'To']
   let i = -1
   do { b /= 1024; i++ } while (b >= 1024 && i < units.length - 1)
-  return `${b.toFixed(b < 10 ? 1 : 0).replace('.', ',')} ${units[i]}`
+  const num = b.toFixed(b < 10 ? 1 : 0)
+  return `${en ? num : num.replace('.', ',')} ${units[i]}`
 }
 
-export const fmtCount = (n: number) => Math.round(n).toLocaleString('fr-BE')
+export const fmtCount = (n: number) => Math.round(n).toLocaleString(LOCALE)
 
 export const fmtDate = (t: number) =>
-  new Date(t * 1000).toLocaleDateString('fr-BE', { day: '2-digit', month: 'short', year: 'numeric' })
+  new Date(t * 1000).toLocaleDateString(LOCALE, { day: '2-digit', month: 'short', year: 'numeric' })
 
 export const fmtDateTime = (t: number) =>
-  new Date(t * 1000).toLocaleString('fr-BE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+  new Date(t * 1000).toLocaleString(LOCALE, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-export const plural = (n: number, one: string, many = `${one}s`) => `${fmtCount(n)} ${n > 1 ? many : one}`
+/** « 3 éléments » : les mots sont donnés en français et traduits ; en anglais, 0 prend le pluriel. */
+export const plural = (n: number, one: string, many = `${one}s`) =>
+  `${fmtCount(n)} ${tr((LANG === 'en' ? n !== 1 : n > 1) ? many : one)}`
+
+/** Heure courte (« 14:05 ») dans la langue de l'interface. */
+export const fmtTime = (t: number) => new Date(t * 1000).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
 
 /* Dossiers cibles du dock */
 export const TARGET_STYLE: Record<string, { color: string; icon: LucideIcon }> = {
@@ -63,7 +71,7 @@ export function family(ext: string, isDir: boolean): Family {
 /* Provenance affichée sur les cartes */
 export function sourceBadge(s: Source | null): { text: string; title: string; tone: 'ok' | 'warn' | 'plain' } | null {
   if (!s) return null
-  if (s.redownloadable) return { text: `↻ ${s.label}`, title: `Retéléchargeable depuis ${s.label}`, tone: 'ok' }
-  if (s.expirable) return { text: `⌛ ${s.label}`, title: 'Lien de transfert qui expire : pas de deuxième chance', tone: 'warn' }
-  return { text: s.label, title: `Téléchargé depuis ${s.label}`, tone: 'plain' }
+  if (s.redownloadable) return { text: `↻ ${s.label}`, title: tr('Retéléchargeable depuis {label}', { label: s.label }), tone: 'ok' }
+  if (s.expirable) return { text: `⌛ ${s.label}`, title: tr('Lien de transfert qui expire : pas de deuxième chance'), tone: 'warn' }
+  return { text: s.label, title: tr('Téléchargé depuis {label}', { label: s.label }), tone: 'plain' }
 }

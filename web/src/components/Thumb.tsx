@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { thumbUrl } from '../api'
+import { tr } from '../i18n'
 import { family } from '../lib'
 
 /** Icône de repli : une feuille cornée teintée selon la famille de fichier. */
@@ -30,7 +31,7 @@ export function Glyph({ ext, isDir, scale = 1 }: { ext: string; isDir: boolean; 
         className="font-mono uppercase tracking-wider"
         style={{ color: 'color-mix(in oklab, var(--c) 60%, var(--ink))', fontSize: Math.max(11, 10.5 * scale), padding: '1px 6px', borderRadius: 4, background: 'color-mix(in oklab, var(--c) 14%, transparent)' }}
       >
-        {ext ? ext.slice(1, 6) : 'fichier'}
+        {ext ? ext.slice(1, 6) : tr('fichier')}
       </span>
     </div>
   )

@@ -1,6 +1,7 @@
 """API locale + interface web. N'écoute que sur 127.0.0.1."""
 import itertools
 import os
+import re
 import subprocess
 import threading
 import time
@@ -9,14 +10,15 @@ from collections import defaultdict
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .actions import Journal, Op
-from .auto import AutoSorter
+from .auto import AUTO_PREFIX, AutoSorter
 from .config import Config, load_config
 from .foreground import launch
+from .i18n import lang, set_language, tr
 from .receipts import RECEIPT_NAME, write_receipts
 from .remote import find_remotes, free_local_copy
 from .rules import (ARCHIVES, AUDIO, DOCUMENTS, IMAGES, INSTALLERS, QUARANTINE, TARGETS, VIDEOS, Bucket, build_plan,
@@ -29,7 +31,8 @@ EXECUTABLE = INSTALLERS | {".bat", ".cmd", ".ps1", ".vbs", ".js", ".jse", ".wsf"
                            ".com", ".jar", ".hta", ".reg", ".msp", ".appinstaller", ".html", ".htm", ".svg"}
 THUMB_SIZES = {128, 256, 512}
 FAMILIES = [("videos", "Vidéos", VIDEOS), ("images", "Images", IMAGES), ("audio", "Audio", AUDIO),
-            ("documents", "Documents", DOCUMENTS), ("archives", "Archives", ARCHIVES)]
+            ("documents", "Documents", DOCUMENTS), ("archives", "Archives", ARCHIVES)]  # libellés traduits à l'envoi
+HTML_LANG = re.compile(r'(<html[^>]*\blang=")[^"]*(")', re.IGNORECASE)
 MAX_LISTED = 20000
 
 
@@ -60,6 +63,7 @@ def _hostname(value: str) -> str:
 def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     """start_auto : lance la surveillance en tâche de fond (l'appli réelle ; pas les tests)."""
     cfg = cfg or load_config()
+    set_language(cfg.language)  # aussi pour une Config construite à la main (tests)
     journal = Journal(cfg)
     thumbs = ThumbCache(cfg.data_dir / "miniatures")
     receipts_path = cfg.documents_dest / RECEIPT_NAME
@@ -74,7 +78,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         origin = request.headers.get("origin")
         foreign = origin and _hostname(origin.split("://", 1)[-1]) not in LOCAL_HOSTS
         if host not in LOCAL_HOSTS or foreign or (request.method != "GET" and request.headers.get(APP_HEADER) != "1"):
-            return JSONResponse({"detail": "requête refusée : réservée à l'interface locale"}, status_code=403)
+            return JSONResponse({"detail": tr("requête refusée : réservée à l'interface locale")}, status_code=403)
         return await call_next(request)
     lock = threading.Lock()          # état du plan
     job_ids = itertools.count(1)
@@ -105,12 +109,12 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
                for t in TARGETS.values()]
         out += [{"key": r.key, "label": r.label, "path": str(r.root) if r.root else "", "available": r.available,
                  "remote": True, "free": r.free, "hint": r.hint} for r in remotes()]
-        return out + [{"key": QUARANTINE, "label": "Quarantaine", "path": str(cfg.quarantine_dir), "available": True,
+        return out + [{"key": QUARANTINE, "label": tr("Quarantaine"), "path": str(cfg.quarantine_dir), "available": True,
                        "remote": False}]
 
     def target_label(key: str) -> str:
         if key == QUARANTINE:
-            return "Quarantaine"
+            return tr("Quarantaine")
         if key in TARGETS:
             return TARGETS[key].label
         return next((r.label for r in remotes() if r.key == key), key)
@@ -119,7 +123,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         t0 = time.time()
         set_phase = lambda p: state.__setitem__("phase", p)
         try:
-            set_phase("Indexation")
+            set_phase(tr("Indexation"))
             items = scan(cfg.downloads)
             buckets = build_plan(items, cfg, progress=set_phase)
             entries = {}
@@ -160,12 +164,15 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         with lock:
             found = state["entries"].get(entry_id)
         if not found:
-            raise HTTPException(404, "élément inconnu, relance un scan")
+            raise HTTPException(404, tr("élément inconnu, relance un scan"))
         return found
 
     @app.get("/")
     def index():
-        return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})
+        """La page de l'interface, avec lang="fr" ou lang="en" : le front prend la même langue que le serveur."""
+        html = (STATIC / "index.html").read_text(encoding="utf-8")
+        html = HTML_LANG.sub(lambda m: f"{m.group(1)}{lang()}{m.group(2)}", html, count=1)
+        return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
     @app.get("/favicon.svg")
     def favicon():
@@ -180,7 +187,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
             if state["status"] == "scanning":
                 return {"status": "scanning"}
             if state["pending"]:
-                raise HTTPException(409, "un transfert est en cours")
+                raise HTTPException(409, tr("un transfert est en cours"))
             state["status"] = "scanning"
         threading.Thread(target=run_scan, daemon=True).start()
         return {"status": "scanning"}
@@ -190,6 +197,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         with lock:
             payload = {k: state[k] for k in ("status", "phase", "error", "scanned_at", "duration")}
             payload["root"] = str(cfg.downloads)
+            payload["lang"] = lang()
             payload["targets"] = targets()
             payload["receipts"] = str(receipts_path) if receipts_path.exists() else None
             if state["status"] == "ready":
@@ -230,20 +238,20 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     def apply(req: ApplyRequest):
         available = {r.key: r.root for r in remotes() if r.available}
         if req.target is not None and req.target != QUARANTINE and req.target not in TARGETS and req.target not in available:
-            raise HTTPException(400, "cible inconnue ou indisponible")
+            raise HTTPException(400, tr("cible inconnue ou indisponible"))
         with lock:
             chosen = [(i, *state["entries"][i]) for i in req.ids if i in state["entries"] and i not in state["pending"]]
             chosen = [(i, b, e, req.target or b.target) for i, b, e in chosen if (req.target or b.target)]
             if not chosen:
-                raise HTTPException(400, "aucun élément applicable")
+                raise HTTPException(400, tr("aucun élément applicable"))
             tkeys = {t for *_, t in chosen}
             if len(tkeys) > 1:
-                raise HTTPException(400, "un seul dossier cible par action")
+                raise HTTPException(400, tr("un seul dossier cible par action"))
             state["pending"] |= {i for i, *_ in chosen}
         tkey = tkeys.pop()
         chosen = [(i, b, e) for i, b, e, _ in chosen]
         sources = {b.title for _, b, _ in chosen}
-        label = f"{sources.pop() if len(sources) == 1 else 'Sélection'} → {target_label(tkey)}"
+        label = f"{sources.pop() if len(sources) == 1 else tr('Sélection')} → {target_label(tkey)}"
 
         ops, op_owner = [], []
         for n, (_, _, e) in enumerate(chosen):
@@ -300,7 +308,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     def auto_status():
         with lock:
             events = state["auto_events"][-5:]
-        recent = [b for b in journal.history(200) if b["label"].startswith("Auto · ")][:10]
+        recent = [b for b in journal.history(200) if b["label"].startswith(AUTO_PREFIX)][:10]
         return auto.status() | {"events": events, "recent": recent}
 
     @app.post("/api/auto")
@@ -318,7 +326,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     @app.post("/api/auto/run")
     def auto_run():
         if state["pending"]:
-            raise HTTPException(409, "un transfert est en cours")
+            raise HTTPException(409, tr("un transfert est en cours"))
         batches = auto.run_once()
         auto.refresh_preview_async()
         return {"batches": batches}
@@ -393,7 +401,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         except ValueError as e:
             raise HTTPException(400, str(e))
         except OSError as e:
-            raise HTTPException(500, f"restauration impossible : {e}")
+            raise HTTPException(500, tr("restauration impossible : {error}", error=e))
         ids = []
         with lock:  # l'élément reprend sa place dans son lot si c'était un fichier seul
             tkey, removed = state["removed"].get(result["batch_id"], (None, []))
@@ -462,7 +470,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
             f = fam[_family(name)]
             f[0] += 1
             f[1] += size
-        labels = {k: label for k, label, _ in FAMILIES} | {"other": "Autres"}
+        labels = {k: tr(label) for k, label, _ in FAMILIES} | {"other": tr("Autres")}
         return {
             "files": len(files), "bytes": sum(s for _, s in files), "truncated": truncated,
             "families": sorted(({"key": k, "label": labels[k], "count": c, "bytes": s} for k, (c, s) in fam.items()),
@@ -502,7 +510,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
         path = (cfg.quarantine_dir if key == QUARANTINE else TARGETS[key].root(cfg) if key in TARGETS
                 else roots.get(key))
         if path is None:
-            raise HTTPException(404, "destination indisponible")
+            raise HTTPException(404, tr("destination indisponible"))
         path.mkdir(parents=True, exist_ok=True)
         launch(lambda: os.startfile(path), path.name)
         return {"ok": True}
@@ -518,7 +526,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     @app.post("/api/open-receipts")
     def open_receipts():
         if not receipts_path.exists():
-            raise HTTPException(404, "aucun reçu pour l'instant")
+            raise HTTPException(404, tr("aucun reçu pour l'instant"))
         launch(lambda: os.startfile(receipts_path))
         return {"ok": True}
 

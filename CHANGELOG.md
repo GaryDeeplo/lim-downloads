@@ -11,3 +11,4 @@ First public version.
 - Lim, the robot guide, for the first launch.
 - Own window (WebView2), tray icon, Windows notifications, start with Windows.
 - Local API restricted to the app itself.
+- English and French interface, following the Windows language (`language` in `config.json` to force one).

@@ -16,6 +16,7 @@ import uvicorn
 
 from .autostart import ICON, app_icon, refresh, set_startup, startup_enabled
 from .config import load_config
+from .i18n import tr
 from .server import APP_HEADER, create_app
 
 PORT = int(os.environ.get("DM_PORT", 8765))  # DM_PORT : autre instance (démo)
@@ -60,11 +61,12 @@ def notifier(app, open_ui):
         n = sum(b["done"] for b in batches)
         names = [name for b in batches for name in b["names"]]
         where = ", ".join(sorted({b["label"].split("→")[-1].strip() for b in batches}))
-        toast = Toast([f"{n} téléchargement{'s' if n > 1 else ''} rangé{'s' if n > 1 else ''} automatiquement",
-                       f"→ {where}", ", ".join(names[:3]) + (" …" if len(names) > 3 else "")])
+        title = (tr("{n} téléchargements rangés automatiquement", n=n) if n > 1
+                 else tr("{n} téléchargement rangé automatiquement", n=n))
+        toast = Toast([title, f"→ {where}", ", ".join(names[:3]) + (" …" if len(names) > 3 else "")])
         ids = ",".join(str(b["batch_id"]) for b in batches)
-        toast.AddAction(ToastButton("Annuler", f"undo:{ids}"))
-        toast.AddAction(ToastButton("Ouvrir", "open"))
+        toast.AddAction(ToastButton(tr("Annuler"), f"undo:{ids}"))
+        toast.AddAction(ToastButton(tr("Ouvrir"), "open"))
 
         def activated(args):
             arg = getattr(args, "arguments", "") or "open"
@@ -74,7 +76,7 @@ def notifier(app, open_ui):
                         urllib.request.urlopen(urllib.request.Request(f"{URL}/api/undo/{batch_id}", method="POST", headers={APP_HEADER: "1"}), timeout=600)
                     except OSError:
                         pass
-                toaster.show_toast(Toast(["Tri automatique annulé", "Les fichiers sont revenus dans Téléchargements."]))
+                toaster.show_toast(Toast([tr("Tri automatique annulé"), tr("Les fichiers sont revenus dans Téléchargements.")]))
             else:
                 open_ui()
 
@@ -151,12 +153,12 @@ def main():
             window.quit()
 
     menu = pystray.Menu(
-        pystray.MenuItem("Ouvrir Downloads Manager", lambda: open_ui(), default=True),
-        pystray.MenuItem("Tri automatique", toggle, checked=lambda _: auto.enabled),
-        pystray.MenuItem("Trier maintenant", run_now),
-        pystray.MenuItem("Lancer au démarrage de Windows", toggle_startup, checked=lambda _: startup_enabled()),
+        pystray.MenuItem(tr("Ouvrir Downloads Manager"), lambda: open_ui(), default=True),
+        pystray.MenuItem(tr("Tri automatique"), toggle, checked=lambda _: auto.enabled),
+        pystray.MenuItem(tr("Trier maintenant"), run_now),
+        pystray.MenuItem(tr("Lancer au démarrage de Windows"), toggle_startup, checked=lambda _: startup_enabled()),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Quitter", quit_app),
+        pystray.MenuItem(tr("Quitter"), quit_app),
     )
     tray = pystray.Icon("downloads-manager", app_icon(64), "Downloads Manager", menu)
     if window:  # la fenêtre a besoin du fil principal ; l'icône tourne à côté

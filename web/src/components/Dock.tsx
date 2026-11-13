@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import type { Target } from '../api'
+import { tr } from '../i18n'
 import { fmtBytes, fmtCount, TARGET_STYLE } from '../lib'
 
 export type Received = Record<string, { n: number; bytes: number }>
@@ -48,11 +49,11 @@ function DockFolder({ target, width, received, bump, isDefault, dragging, receiv
 }) {
   const { color, icon } = TARGET_STYLE[target.key]
   const off = !target.available
-  const sub = progress !== null ? `${Math.round(progress * 100)} %`
+  const sub = progress !== null ? tr('{n} %', { n: Math.round(progress * 100) })
     : !target.remote ? null
-    : off ? 'absent'
-    : target.free != null ? `${fmtBytes(target.free)} libres`
-    : 'en ligne'
+    : off ? tr('absent')
+    : target.free != null ? tr('{x} libres', { x: fmtBytes(target.free) })
+    : tr('en ligne')
   const [hover, setHover] = useState(false)
   const [over, setOver] = useState(false)
   const controls = useAnimationControls()
@@ -66,8 +67,9 @@ function DockFolder({ target, width, received, bump, isDefault, dragging, receiv
       type="button"
       data-target={target.key}
       title={off
-        ? `${target.label} : ${target.hint ?? 'indisponible'}`
-        : `${target.label} — ${target.path}${target.hint ? `\n${target.hint}` : ''}\nClic : ${target.key === 'quarantine' ? 'voir son contenu' : "ouvrir dans l'Explorateur"}`}
+        ? tr('{label} : {hint}', { label: target.label, hint: target.hint ?? tr('indisponible') })
+        : `${target.label} — ${target.path}${target.hint ? `\n${target.hint}` : ''}\n` +
+          (target.key === 'quarantine' ? tr('Clic : voir son contenu') : tr("Clic : ouvrir dans l'Explorateur"))}
       onClick={onOpen}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -92,7 +94,7 @@ function DockFolder({ target, width, received, bump, isDefault, dragging, receiv
             exit={{ opacity: 0, y: 6 }}
             className="text-c absolute -top-[18px] whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.12em]"
           >
-            {over ? 'déposer' : 'cible ↓'}
+            {over ? tr('déposer') : tr('cible ↓')}
           </motion.span>
         )}
       </AnimatePresence>

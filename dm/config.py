@@ -5,6 +5,8 @@ import sys
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
+from .i18n import set_language, tr
+
 FROZEN = getattr(sys, "frozen", False)  # lancé depuis Downloads Manager.exe
 PROJECT_DIR = Path(sys.executable).parent if FROZEN else Path(__file__).resolve().parent.parent
 CONFIG_FILE = PROJECT_DIR / "config.json"  # à côté de l'exe, ou à la racine du projet
@@ -26,19 +28,30 @@ def _shell_folder(name: str, fallback: str) -> Path:
 DOWNLOADS_GUID = "{374DE290-123F-4565-9164-39C4925E467B}"
 
 
+def _dest(name: str, fallback: str) -> Path:
+    """Sous-dossier « Téléchargements » (« Downloads » en anglais) d'un dossier utilisateur Windows."""
+    return _shell_folder(name, fallback) / tr("Téléchargements")
+
+
+def archive_dir_name() -> str:
+    """Nom du dossier d'archives sur OneDrive, Google Drive ou un disque externe, dans la langue de l'appli."""
+    return tr("Téléchargements archivés")
+
+
 @dataclass
 class Config:
     downloads: Path = field(default_factory=lambda: _shell_folder(DOWNLOADS_GUID, "Downloads"))
     data_dir: Path = field(default_factory=lambda: Path(os.environ.get("LOCALAPPDATA", Path.home())) / "DownloadsManager")
-    videos_dest: Path = field(default_factory=lambda: _shell_folder("My Video", "Videos") / "Téléchargements")
-    pictures_dest: Path = field(default_factory=lambda: _shell_folder("My Pictures", "Pictures") / "Téléchargements")
-    music_dest: Path = field(default_factory=lambda: _shell_folder("My Music", "Music") / "Téléchargements")
-    documents_dest: Path = field(default_factory=lambda: _shell_folder("Personal", "Documents") / "Téléchargements")
+    videos_dest: Path = field(default_factory=lambda: _dest("My Video", "Videos"))
+    pictures_dest: Path = field(default_factory=lambda: _dest("My Pictures", "Pictures"))
+    music_dest: Path = field(default_factory=lambda: _dest("My Music", "Music"))
+    documents_dest: Path = field(default_factory=lambda: _dest("Personal", "Documents"))
 
     # Destinations distantes : affichées dans le dock quand elles sont disponibles.
-    onedrive_dest: Path | None = field(default_factory=lambda: Path(os.environ["OneDrive"]) / "Téléchargements archivés"
+    onedrive_dest: Path | None = field(default_factory=lambda: Path(os.environ["OneDrive"]) / archive_dir_name()
                                        if os.environ.get("OneDrive") else None)
     external_dest: Path | None = None   # sinon : premier disque externe détecté, dossier « Téléchargements archivés »
+    language: str = "auto"              # auto (langue de Windows) | fr | en
     detect_remote: bool = True          # détection auto de Google Drive et des disques externes
 
     # Où chercher des copies déjà sauvegardées.
@@ -66,6 +79,11 @@ class Config:
         "tax", "fiche de paie", "payslip", "salaire", "acte", "notaire", "bail", "assurance",
         "certificat", "diplome", "diplôme", "permis", "medical", "médical", "ordonnance",
         "recovery", "codes", "password", "mot de passe", "2fa", "seed", "wallet", "clé", "license", "licence",
+        # équivalents anglais (et quelques mots français de plus)
+        "salary", "payroll", "pay slip", "bank statement", "statement", "relevé", "releve", "id card", "id_card",
+        "id-card", "identity", "lease agreement", "rental agreement", "tenancy", "insurance", "certificate",
+        "diploma", "driving licence", "driving license", "permis de conduire", "prescription", "recovery codes",
+        "seed phrase", "private key", "notary", "mortgage", "hypothèque", "hypotheque",
     ])
 
     @property
@@ -78,18 +96,21 @@ class Config:
 
 
 def load_config() -> Config:
-    cfg = Config()
     config_file = Path(os.environ.get("DM_CONFIG", CONFIG_FILE))  # DM_CONFIG : autre config (démo, tests)
-    if config_file.exists():
-        overrides = json.loads(config_file.read_text(encoding="utf-8"))
+    overrides = json.loads(config_file.read_text(encoding="utf-8")) if config_file.exists() else {}
+    # La langue d'abord : les noms des dossiers par défaut en dépendent.
+    set_language(overrides.get("language", "auto"))
+    cfg = Config()
+    if overrides:
         path_fields = {f.name for f in fields(Config) if f.name.endswith(("_dest", "_dir")) or f.name == "downloads"}
         to_path = lambda v: Path(os.path.expandvars(v))
         for key, value in overrides.items():
             if not hasattr(cfg, key):
-                raise ValueError(f"config.json : clé inconnue « {key} »")
+                raise ValueError(tr("config.json : clé inconnue « {key} »", key=key))
             if key == "backup_roots":
                 value = [to_path(v) for v in value]
             elif key in path_fields and value is not None:
                 value = to_path(value)
             setattr(cfg, key, value)
+    set_language(cfg.language)
     return cfg

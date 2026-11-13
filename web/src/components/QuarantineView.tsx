@@ -3,6 +3,7 @@ import { FolderOpen, LoaderCircle, ShieldCheck, Trash2, Undo2 } from 'lucide-rea
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { api, quarantineThumbUrl, type Quarantine, type QuarantineBatch, type QuarantineItem } from '../api'
 import { fmtBytes, fmtDate, fmtDateTime, plural, TARGET_STYLE } from '../lib'
+import { tr } from '../i18n'
 import { Thumb } from './Thumb'
 import { HoldButton } from './ui'
 
@@ -29,17 +30,17 @@ function ItemCard({ item, index, onRestore }: { item: QuarantineItem; index: num
         <button
           type="button"
           disabled={busy || !item.exists}
-          title={`Remettre dans ${item.origin}`}
+          title={tr('Remettre dans {path}', { path: item.origin })}
           onClick={async () => { setBusy(true); try { await onRestore() } finally { setBusy(false) } }}
           className="absolute inset-x-2 bottom-2 flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-black/60 px-3 py-1.5 text-[12px] font-medium text-white opacity-0 backdrop-blur transition-opacity focus-visible:opacity-100 group-hover:opacity-100 disabled:cursor-wait"
         >
-          {busy ? <LoaderCircle size={13} className="animate-spin" /> : <Undo2 size={13} />} Remettre
+          {busy ? <LoaderCircle size={13} className="animate-spin" /> : <Undo2 size={13} />} {tr('Remettre')}
         </button>
       </div>
       <div className="px-1.5 pb-1 pt-2">
         <div className="line-clamp-2 break-all text-[13px] font-medium leading-[1.2]" title={item.name}>{item.name}</div>
         <div className="mt-1 truncate font-mono text-[11px] text-muted" title={item.origin}>
-          {fmtBytes(item.size)} · {item.exists ? `venait de ${origin}` : 'introuvable sur le disque'}
+          {fmtBytes(item.size)} · {item.exists ? tr('venait de {folder}', { folder: origin }) : tr('introuvable sur le disque')}
         </div>
       </div>
     </motion.div>
@@ -62,17 +63,17 @@ function BatchSection({ batch, days, onRestoreItem, onRestoreBatch, onPurgeBatch
           <div className="text-[19px] font-semibold tracking-tight">{batch.label}</div>
           <div className="mt-0.5 font-mono text-[11px] text-muted">
             {fmtDateTime(batch.created)} · {plural(batch.count, 'élément')} · {fmtBytes(batch.bytes)} ·{' '}
-            <span className={left <= 3 ? 'text-c' : ''} title={`Supprimé définitivement le ${fmtDate(batch.expires)} (${days} jours après la mise en quarantaine)`}>
-              {left ? `supprimé dans ${plural(left, 'jour')}` : 'supprimé à la prochaine purge'}
+            <span className={left <= 3 ? 'text-c' : ''} title={tr('Supprimé définitivement le {date} ({days} jours après la mise en quarantaine)', { date: fmtDate(batch.expires), days })}>
+              {left ? tr('supprimé dans {delay}', { delay: plural(left, 'jour') }) : tr('supprimé à la prochaine purge')}
             </span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <button type="button" onClick={onRestoreBatch} className="flex items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-[12.5px] font-medium hover:bg-surface-strong">
-            <Undo2 size={13} /> Tout remettre
+            <Undo2 size={13} /> {tr('Tout remettre')}
           </button>
           <HoldButton color={COLOR} onConfirm={onPurgeBatch} duration={1.2} className="!px-3.5 !py-2 !text-[12.5px] !font-medium">
-            <Trash2 size={13} /> Maintenir : supprimer le lot
+            <Trash2 size={13} /> {tr('Maintenir : supprimer le lot')}
           </HoldButton>
         </div>
       </div>
@@ -85,7 +86,7 @@ function BatchSection({ batch, days, onRestoreItem, onRestoreBatch, onPurgeBatch
       </div>
       {limit < batch.items.length && (
         <button type="button" onClick={() => setLimit((l) => l + PER_BATCH * 2)} className="mt-3 rounded-full border border-line px-4 py-2 text-[12.5px] text-muted hover:text-ink">
-          Afficher {plural(Math.min(PER_BATCH * 2, batch.items.length - limit), 'autre élément', 'autres éléments')} sur {batch.items.length - limit}
+          {tr('Afficher {items} sur {total}', { items: plural(Math.min(PER_BATCH * 2, batch.items.length - limit), 'autre élément', 'autres éléments'), total: batch.items.length - limit })}
         </button>
       )}
     </motion.section>
@@ -126,23 +127,23 @@ export function QuarantineView({ refresh, onRestoreItem, onRestoreBatch, onPurge
     <section className="flex min-h-0 flex-1 flex-col" style={{ '--c': COLOR } as CSSProperties}>
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4 px-8 pb-6 pt-7">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="min-w-0 max-w-2xl">
-          <h1 className="text-[42px] font-[640] leading-[0.95] tracking-[-0.035em]">Quarantaine</h1>
+          <h1 className="text-[42px] font-[640] leading-[0.95] tracking-[-0.035em]">{tr('Quarantaine')}</h1>
           <p className="mt-2.5 text-[14px] text-muted">
-            Ce que tu as mis de côté. Chaque lot est gardé {data ? plural(data.days, 'jour') : '30 jours'}, puis supprimé pour de bon.
-            D'ici là, tu peux remettre un fichier ou un lot entier dans Téléchargements.
+            {tr('Ce que tu as mis de côté. Chaque lot est gardé {delay}, puis supprimé pour de bon.', { delay: plural(data?.days ?? 30, 'jour') })}
+            {' '}{tr('D\'ici là, tu peux remettre un fichier ou un lot entier dans Téléchargements.')}
           </p>
           <div className="mt-3 font-mono text-[12px] text-muted">
-            {data ? <>{plural(count, 'élément')} · {fmtBytes(bytes)} · {plural(data.batches.length, 'lot')}</> : 'chargement…'}
+            {data ? <>{plural(count, 'élément')} · {fmtBytes(bytes)} · {plural(data.batches.length, 'lot')}</> : tr('chargement…')}
           </div>
         </motion.div>
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
           {count > 0 && (
             <HoldButton color={COLOR} onConfirm={onEmpty} duration={2}>
-              <Trash2 size={15} /> Maintenir : vider la quarantaine · <span className="font-mono text-[12px] opacity-80">{fmtBytes(bytes)}</span>
+              <Trash2 size={15} /> {tr('Maintenir : vider la quarantaine')} · <span className="font-mono text-[12px] opacity-80">{fmtBytes(bytes)}</span>
             </HoldButton>
           )}
           <button type="button" onClick={onExplorer} title={data?.dir} className="flex items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-[12.5px] text-muted hover:text-ink">
-            <FolderOpen size={14} /> Ouvrir dans l'Explorateur
+            <FolderOpen size={14} /> {tr('Ouvrir dans l\'Explorateur')}
           </button>
         </div>
       </div>
@@ -154,8 +155,8 @@ export function QuarantineView({ refresh, onRestoreItem, onRestoreBatch, onPurge
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="grid h-[60%] place-items-center">
             <div className="text-center">
               <div className="tint text-c mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl"><ShieldCheck size={28} /></div>
-              <div className="text-[22px] font-semibold tracking-tight">Quarantaine vide</div>
-              <div className="mt-1 text-muted">Ce que tu mets en quarantaine apparaîtra ici.</div>
+              <div className="text-[22px] font-semibold tracking-tight">{tr('Quarantaine vide')}</div>
+              <div className="mt-1 text-muted">{tr('Ce que tu mets en quarantaine apparaîtra ici.')}</div>
             </div>
           </motion.div>
         )}

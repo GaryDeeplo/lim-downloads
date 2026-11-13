@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Check, CheckCheck, CircleSlash, Eye, FolderSearch, LoaderCircle, Sparkles } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
 import type { Bucket, Entry, Target } from '../api'
+import { tr } from '../i18n'
 import { bucketColor, fmtBytes, fmtDate, plural, sourceBadge, TARGET_STYLE } from '../lib'
 import { Thumb } from './Thumb'
 import { HoldButton, Segmented } from './ui'
@@ -53,7 +54,7 @@ const Card = memo(function Card({ entry, index, selected, actionable, hidden, tr
         tabIndex={0}
         role="button"
         aria-pressed={selected}
-        aria-label={`${entry.name}, ${fmtBytes(entry.size)}${selected ? ', coché' : ''}`}
+        aria-label={`${entry.name}, ${fmtBytes(entry.size)}${selected ? tr(', coché') : ''}`}
         onFocus={() => onHover(entry)}
         onBlur={() => onHover(null)}
         onKeyDown={(ev) => {
@@ -75,13 +76,13 @@ const Card = memo(function Card({ entry, index, selected, actionable, hidden, tr
                 </span>
               )}
               {entry.parts > 1 && (
-                <span className="rounded-full bg-black/60 px-2 py-0.5 font-mono text-[11px] text-white backdrop-blur">{entry.parts} parties</span>
+                <span className="rounded-full bg-black/60 px-2 py-0.5 font-mono text-[11px] text-white backdrop-blur">{tr('{n} parties', { n: entry.parts })}</span>
               )}
             </div>
           )}
           {transferring && (
             <div className="absolute inset-0 grid place-items-center bg-black/55 text-white backdrop-blur-[2px]">
-              <span className="flex items-center gap-2 font-mono text-[11px]"><LoaderCircle size={14} className="animate-spin" /> transfert…</span>
+              <span className="flex items-center gap-2 font-mono text-[11px]"><LoaderCircle size={14} className="animate-spin" /> {tr('transfert…')}</span>
             </div>
           )}
           <span
@@ -93,7 +94,7 @@ const Card = memo(function Card({ entry, index, selected, actionable, hidden, tr
           </span>
           <button
             type="button"
-            title="Aperçu (Espace)"
+            title={tr('Aperçu (Espace)')}
             onClick={(ev) => { ev.stopPropagation(); onPeek(entry) }}
             className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100"
           >
@@ -110,7 +111,7 @@ const Card = memo(function Card({ entry, index, selected, actionable, hidden, tr
           {entry.keeper !== null ? (
             <button
               type="button"
-              title={`Voir l'exemplaire gardé : ${entry.reason}`}
+              title={tr("Voir l'exemplaire gardé : {reason}", { reason: entry.reason })}
               onClick={(ev) => { ev.stopPropagation(); onKeeper(entry.keeper!) }}
               className="mt-0.5 block w-full truncate text-left text-[11px] text-muted underline decoration-line underline-offset-2 hover:text-ink hover:decoration-ink"
             >
@@ -173,7 +174,7 @@ export function BucketView({ bucket, targets, selected, hiddenIds, transferIds, 
 
   const total = bucket.entries.reduce((a, e) => a + e.size, 0)
   const selBytes = bucket.entries.reduce((a, e) => a + (selected.has(e.id) ? e.size : 0), 0)
-  const verb = bucket.action === 'quarantine' ? 'Mettre en quarantaine' : 'Ranger'
+  const verb = bucket.action === 'quarantine' ? tr('Mettre en quarantaine') : tr('Ranger')
   const TIcon = bucket.target ? TARGET_STYLE[bucket.target].icon : null
   const toggle = useCallback((id: number, shift: boolean) => onToggle(id, shift, ordered), [onToggle, ordered])
 
@@ -194,19 +195,19 @@ export function BucketView({ bucket, targets, selected, hiddenIds, transferIds, 
             <div className="mt-3 flex flex-wrap items-center gap-x-1.5 font-mono text-[12px] text-muted">
               <span className="text-c inline-flex items-center gap-1.5 font-medium">
                 {TIcon && <TIcon size={13} />}
-                {target ? `vers ${target.label}` : bucket.key === 'recent' ? 'protégé' : 'sans règle'}
+                {target ? tr('vers {target}', { target: target.label }) : bucket.key === 'recent' ? tr('protégé') : tr('sans règle')}
               </span>
               · {plural(bucket.entries.length, 'élément')} · {fmtBytes(total)}
-              {bucket.target && <> · <span className="text-ink">{selected.size} sélectionnés</span></>}
+              {bucket.target && <> · <span className="text-ink">{tr('{n} sélectionnés', { n: selected.size })}</span></>}
             </div>
           </motion.div>
         </AnimatePresence>
 
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
-          <Segmented id="sort" value={sort} onChange={onSort} options={[{ value: 'size', label: 'taille' }, { value: 'date', label: 'date' }, { value: 'name', label: 'nom' }]} />
+          <Segmented id="sort" value={sort} onChange={onSort} options={[{ value: 'size', label: tr('taille') }, { value: 'date', label: tr('date') }, { value: 'name', label: tr('nom') }]} />
           <Segmented id="zoom" value={zoom} onChange={onZoom} options={[{ value: 's', label: 'S' }, { value: 'm', label: 'M' }, { value: 'l', label: 'L' }]} />
-          <button type="button" onClick={onSelectAll} title="Tout sélectionner (Ctrl+A)" className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:text-ink"><CheckCheck size={15} /></button>
-          <button type="button" onClick={onSelectNone} title="Tout désélectionner" className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:text-ink"><CircleSlash size={15} /></button>
+          <button type="button" onClick={onSelectAll} title={tr('Tout sélectionner (Ctrl+A)')} className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:text-ink"><CheckCheck size={15} /></button>
+          <button type="button" onClick={onSelectNone} title={tr('Tout désélectionner')} className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:text-ink"><CircleSlash size={15} /></button>
           {bucket.target && (
             <span data-tour="apply" className="inline-flex">
               <HoldButton color={color} disabled={!selected.size || busy} onConfirm={onApply}>
@@ -219,7 +220,7 @@ export function BucketView({ bucket, targets, selected, hiddenIds, transferIds, 
       </div>
       {bucket.target && (
         <div className="-mt-2 px-8 pb-3 text-[12.5px] text-muted">
-          Maintiens le bouton pour confirmer, ou glisse des cartes sur un dossier du dock. Entrée coche une carte, Espace ouvre l'aperçu.
+          {tr("Maintiens le bouton pour confirmer, ou glisse des cartes sur un dossier du dock. Entrée coche une carte, Espace ouvre l'aperçu.")}
         </div>
       )}
 
@@ -235,8 +236,8 @@ export function BucketView({ bucket, targets, selected, hiddenIds, transferIds, 
               >
                 <Sparkles size={28} />
               </motion.div>
-              <div className="text-[22px] font-semibold tracking-tight">Lot terminé</div>
-              <div className="mt-1 text-muted">Passe au lot suivant dans la colonne de gauche.</div>
+              <div className="text-[22px] font-semibold tracking-tight">{tr('Lot terminé')}</div>
+              <div className="mt-1 text-muted">{tr('Passe au lot suivant dans la colonne de gauche.')}</div>
             </div>
           </motion.div>
         ) : (
@@ -266,7 +267,7 @@ export function BucketView({ bucket, targets, selected, hiddenIds, transferIds, 
         )}
         {limit < ordered.length && (
           <div ref={sentinel} className="flex items-center justify-center gap-2 py-8 font-mono text-[11px] text-muted">
-            <FolderSearch size={13} /> {ordered.length - limit} autres…
+            <FolderSearch size={13} /> {tr('{n} autres…', { n: ordered.length - limit })}
           </div>
         )}
       </div>

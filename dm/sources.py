@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from .i18n import tr
+
 # kind : drive | torrent | public | transfer | mail | generated | site | unknown
 REDOWNLOADABLE = {"drive", "torrent", "public"}
 
@@ -73,7 +75,7 @@ def _zone_identifier(path: str) -> tuple[str | None, str | None]:
 def detect(path: str, name: str, is_dir: bool) -> Source:
     url, page = (None, None) if is_dir else _zone_identifier(path)
     if TRANSFER_NAME.match(name):
-        return Source("transfer", "transfert (lien expiré)", url, page, expirable=True)
+        return Source("transfer", tr("transfert (lien expiré)"), url, page, expirable=True)
     for value in (url, page):
         host = urlparse(value).netloc.lower() if value else ""
         if not host:
@@ -82,7 +84,7 @@ def detect(path: str, name: str, is_dir: bool) -> Source:
             return Source("torrent", "torrent", url, page)
         for fragment, kind, label, expirable in HOSTS:
             if fragment in host:
-                return Source(kind, label, url, page, expirable)
+                return Source(kind, tr(label), url, page, expirable)  # « pièce jointe Gmail » : traduit
     if url and url.lower().endswith(".torrent"):
         return Source("torrent", "torrent", url, page)
     if DRIVE_EXPORT.search(name.rsplit(".zip", 1)[0] if name.lower().endswith(".zip") else name) or name.startswith("drive-download-"):

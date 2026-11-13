@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useDialog } from './useDialog'
+import { tr } from '../i18n'
 
 /* Lim, le robot guide : il vole jusqu'à chaque zone de l'appli et explique ce qu'on y fait. */
 
@@ -16,21 +17,21 @@ function setGuidePref(again: boolean) {
 type Step = { target?: string; title: string; text: string; action?: { label: string } }
 
 const stepsFor = (days: number, autoConfigured: boolean): Step[] => [
-  { title: 'Salut, moi c\'est Lim', text: 'Je range tes téléchargements. Je te fais le tour de l\'appli en quelques étapes. Tu peux passer quand tu veux.' },
+  { title: tr('Salut, moi c\'est Lim'), text: tr('Je range tes téléchargements. Je te fais le tour de l\'appli en quelques étapes. Tu peux passer quand tu veux.') },
   ...(autoConfigured ? [] : [{
-    target: '[data-tour="auto"]', title: 'D\'abord : le tri auto',
-    text: 'Je peux ranger tout seul tes prochains téléchargements, quelques jours après leur arrivée. Il est éteint : règle-le maintenant, ou plus tard avec ce bouton.',
-    action: { label: 'Régler maintenant' },
+    target: '[data-tour="auto"]', title: tr('D\'abord : le tri auto'),
+    text: tr('Je peux ranger tout seul tes prochains téléchargements, quelques jours après leur arrivée. Il est éteint : règle-le maintenant, ou plus tard avec ce bouton.'),
+    action: { label: tr('Régler maintenant') },
   }]),
-  { target: '[data-tour="scan"]', title: 'Scanner', text: 'Je relis ton dossier Téléchargements et je classe chaque fichier dans un lot. Rien ne bouge tant que tu ne confirmes pas.' },
-  { target: '[data-tour="sidebar"]', title: 'Les lots', text: '« Libérer de la place » : ce qui peut partir sans regret, comme les doublons, les installeurs ou les zips déjà extraits. « Ranger » : ce qui va dans tes dossiers. « À vérifier » : c\'est à toi de juger.' },
-  { target: '[data-entry]', title: 'Les cartes', text: 'Clique sur une carte pour la cocher ou la décocher, Maj + clic pour une plage. Espace ouvre l\'aperçu, double-clic ouvre le fichier.' },
-  { target: '[data-tour="apply"]', title: 'Confirmer', text: 'Maintiens ce bouton une seconde pour traiter les cartes cochées. Le maintien évite les fausses manœuvres.' },
-  { target: '[data-tour="dock"]', title: 'Le dock', text: 'Glisse une ou plusieurs cartes sur un dossier pour les y envoyer. Un clic sur un dossier l\'ouvre dans l\'Explorateur.' },
-  { target: '[data-target="quarantine"]', title: 'La quarantaine', text: `Rien n'est supprimé tout de suite : tout passe ici pendant ${days} jours. Clique dessus pour voir son contenu, remettre un fichier à sa place ou tout vider d'un coup.` },
-  { target: '[data-tour="history"]', title: 'Historique', text: 'Chaque action s\'annule d\'un clic, même plusieurs jours plus tard.' },
-  ...(autoConfigured ? [{ target: '[data-tour="auto"]', title: 'Tri auto', text: 'Je range tout seul les nouveaux téléchargements après quelques jours. Clique ici pour voir ce qui attend son tour et changer les réglages.' }] : []),
-  { target: '[data-tour="guide"]', title: 'C\'est tout !', text: 'Je reste ici. Clique sur moi pour revoir le guide quand tu veux.' },
+  { target: '[data-tour="scan"]', title: tr('Scanner'), text: tr('Je relis ton dossier Téléchargements et je classe chaque fichier dans un lot. Rien ne bouge tant que tu ne confirmes pas.') },
+  { target: '[data-tour="sidebar"]', title: tr('Les lots'), text: tr('« Libérer de la place » : ce qui peut partir sans regret, comme les doublons, les installeurs ou les zips déjà extraits. « Ranger » : ce qui va dans tes dossiers. « À vérifier » : c\'est à toi de juger.') },
+  { target: '[data-entry]', title: tr('Les cartes'), text: tr('Clique sur une carte pour la cocher ou la décocher, Maj + clic pour une plage. Espace ouvre l\'aperçu, double-clic ouvre le fichier.') },
+  { target: '[data-tour="apply"]', title: tr('Confirmer'), text: tr('Maintiens ce bouton une seconde pour traiter les cartes cochées. Le maintien évite les fausses manœuvres.') },
+  { target: '[data-tour="dock"]', title: tr('Le dock'), text: tr('Glisse une ou plusieurs cartes sur un dossier pour les y envoyer. Un clic sur un dossier l\'ouvre dans l\'Explorateur.') },
+  { target: '[data-target="quarantine"]', title: tr('La quarantaine'), text: tr('Rien n\'est supprimé tout de suite : tout passe ici pendant {days} jours. Clique dessus pour voir son contenu, remettre un fichier à sa place ou tout vider d\'un coup.', { days }) },
+  { target: '[data-tour="history"]', title: tr('Historique'), text: tr('Chaque action s\'annule d\'un clic, même plusieurs jours plus tard.') },
+  ...(autoConfigured ? [{ target: '[data-tour="auto"]', title: tr('Tri auto'), text: tr('Je range tout seul les nouveaux téléchargements après quelques jours. Clique ici pour voir ce qui attend son tour et changer les réglages.') }] : []),
+  { target: '[data-tour="guide"]', title: tr('C\'est tout !'), text: tr('Je reste ici. Clique sur moi pour revoir le guide quand tu veux.') },
 ]
 
 const RW = 76, RH = 92, BW = 344, GAP = 14, M = 16
@@ -283,15 +284,15 @@ export function Guide({ open, paused, days, autoConfigured, onAction, onClose }:
                 </div>
                 <label className="mt-3.5 flex cursor-pointer select-none items-center gap-2 text-[12.5px] text-muted">
                   <input type="checkbox" checked={again} onChange={(e) => setAgain(e.target.checked)} className="h-3.5 w-3.5 accent-[var(--accent)]" />
-                  Me remontrer au prochain lancement
+                  {tr('Me remontrer au prochain lancement')}
                 </label>
                 <div className="mt-3.5 flex items-center gap-2">
                   <button type="button" onClick={close} className="whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-medium text-muted hover:text-ink">
-                    Passer
+                    {tr('Passer')}
                   </button>
                   {step.action && (
                     <button type="button" onClick={next} className="ml-auto whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-medium text-muted hover:text-ink">
-                      Plus tard
+                      {tr('Plus tard')}
                     </button>
                   )}
                   <motion.button
@@ -301,7 +302,7 @@ export function Guide({ open, paused, days, autoConfigured, onAction, onClose }:
                     onClick={step.action ? act : next}
                     className={`${step.action ? '' : 'ml-auto '}flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent-strong px-4 py-2 text-[13px] font-semibold text-white`}
                   >
-                    {step.action ? step.action.label : i < steps.length - 1 ? <>Suivant <ArrowRight size={14} /></> : 'Terminer'}
+                    {step.action ? step.action.label : i < steps.length - 1 ? <>{tr('Suivant')} <ArrowRight size={14} /></> : tr('Terminer')}
                   </motion.button>
                 </div>
               </motion.div>

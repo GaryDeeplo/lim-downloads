@@ -22,8 +22,6 @@
 
 Your Downloads folder fills up with installers you ran once, zips you already extracted, the same file downloaded three times and huge exports you could grab again. Downloads Manager scans it, sorts everything into batches and lets you clear each batch with one gesture, safely.
 
-> **Note:** the interface is in French for now. An English version is planned.
-
 ## Features
 
 - **Smart batches.** Exact duplicates (byte for byte), zips already extracted next to them, old installers, files already present in your backups, partial downloads, and large files you can download again (torrents, Google Drive exports, public links).
@@ -33,6 +31,7 @@ Your Downloads folder fills up with installers you ran once, zips you already ex
 - **Optional auto-sort.** Off by default. When you turn it on, it only touches files that arrive afterwards, waits the delay you choose (1 to 30 days), never touches folders or sensitive names (invoices, contracts…), and shows you what is waiting and when.
 - **Native thumbnails** from Windows Explorer, quick preview with the space bar, keyboard support.
 - **Lim**, a small robot guide, walks you through the app on first launch.
+- **English and French.** The app follows your Windows language; set `"language": "en"` or `"fr"` in `config.json` to force one.
 - **Runs locally.** Its own window, an icon next to the clock, Windows notifications. No account, no cloud, no telemetry: the local server only answers on `127.0.0.1`.
 
 ![Lim the robot guide pointing at the batch list during the first-run tour](docs/screenshot-lim.jpg)

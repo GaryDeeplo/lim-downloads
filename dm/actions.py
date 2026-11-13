@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from .config import Config
+from .i18n import tr
 
 ERROR_NOT_SAME_DEVICE = 17
 CHUNK = 8 << 20
@@ -61,7 +62,7 @@ def _copy_file(src: str, dst: str, progress: Progress):
             progress(len(chunk))
     shutil.copystat(src, dst)
     if os.path.getsize(dst) != os.path.getsize(src):
-        raise OSError(f"copie incomplète : {dst}")
+        raise OSError(tr("copie incomplète : {path}", path=dst))
 
 
 def safe_move(src: str, dst: str, progress: Progress = lambda _: None, size: int = 0):
@@ -144,13 +145,13 @@ class Journal:
             dst, status, error = None, "ok", None
             try:
                 if not self._inside_downloads(op.src):
-                    raise ValueError("hors du dossier Téléchargements")
+                    raise ValueError(tr("hors du dossier Téléchargements"))
                 if not os.path.exists(op.src):
-                    raise FileNotFoundError("n'existe plus")
+                    raise FileNotFoundError(tr("n'existe plus"))
                 if not op.is_dir:
                     st = os.stat(op.src)
                     if st.st_size != op.size:
-                        raise ValueError("modifié depuis le scan")
+                        raise ValueError(tr("modifié depuis le scan"))
                 target_dir = Path(op.dest_dir) if op.dest_dir else self.cfg.quarantine_dir / str(batch_id)
                 target_dir.mkdir(parents=True, exist_ok=True)
                 dst = str(unique_path(target_dir / os.path.basename(op.src)))
@@ -164,7 +165,7 @@ class Journal:
                 try:
                     after_move(dst)
                 except Exception as e:  # le fichier est bien arrivé : on le note sans annuler
-                    error = f"après déplacement : {e}"
+                    error = tr("après déplacement : {error}", error=e)
             self.db.execute("INSERT INTO ops(batch_id, src, dst, size, status, error) VALUES (?,?,?,?,?,?)",
                             (batch_id, op.src, dst, op.size, status, error))
             results.append({"src": op.src, "dst": dst, "ok": status == "ok", "error": error})
@@ -174,7 +175,7 @@ class Journal:
     def undo(self, batch_id: int) -> dict:
         batch = self.db.execute("SELECT * FROM batches WHERE id=?", (batch_id,)).fetchone()
         if not batch or batch["state"] != "done":
-            raise ValueError("lot introuvable, déjà annulé ou purgé")
+            raise ValueError(tr("lot introuvable, déjà annulé ou purgé"))
         restored = errors = 0
         paths = []  # (chemin d'origine, chemin réel après restauration)
         rows = self.db.execute("SELECT * FROM ops WHERE batch_id=? AND status='ok' ORDER BY id DESC", (batch_id,)).fetchall()
@@ -186,7 +187,7 @@ class Journal:
                 self.db.execute("UPDATE ops SET status='restored', error=NULL WHERE id=?", (row["id"],))
                 restored += 1
             except Exception as e:
-                self.db.execute("UPDATE ops SET error=? WHERE id=?", (f"restauration : {e}", row["id"]))
+                self.db.execute("UPDATE ops SET error=? WHERE id=?", (tr("restauration : {error}", error=e), row["id"]))
                 errors += 1
         if errors == 0:
             self.db.execute("UPDATE batches SET state='undone' WHERE id=?", (batch_id,))
@@ -229,7 +230,7 @@ class Journal:
         row = self.db.execute("""
             SELECT o.*, b.state, b.action FROM ops o JOIN batches b ON b.id=o.batch_id WHERE o.id=?""", (op_id,)).fetchone()
         if not row or row["action"] != "quarantine" or row["state"] != "done" or row["status"] != "ok":
-            raise ValueError("cet élément n'est plus en quarantaine")
+            raise ValueError(tr("cet élément n'est plus en quarantaine"))
         return dict(row)
 
     def restore_op(self, op_id: int) -> dict:
@@ -251,7 +252,7 @@ class Journal:
         """Supprime définitivement UN lot de la quarantaine, sans attendre la fin du délai."""
         batch = self.db.execute("SELECT * FROM batches WHERE id=?", (batch_id,)).fetchone()
         if not batch or batch["action"] != "quarantine" or batch["state"] != "done":
-            raise ValueError("ce lot n'est pas (ou plus) en quarantaine")
+            raise ValueError(tr("ce lot n'est pas (ou plus) en quarantaine"))
         freed = self.db.execute("SELECT COALESCE(SUM(size),0) FROM ops WHERE batch_id=? AND status='ok'",
                                 (batch_id,)).fetchone()[0]
         shutil.rmtree(self.cfg.quarantine_dir / str(batch_id), ignore_errors=True)

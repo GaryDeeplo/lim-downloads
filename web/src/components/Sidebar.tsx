@@ -2,14 +2,15 @@ import { motion } from 'motion/react'
 import { History, RefreshCw, ShieldCheck, Trash2, Zap } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import type { AutoStatus, Bucket, History as HistoryData } from '../api'
+import { tr } from '../i18n'
 import { bucketColor, fmtBytes, fmtCount, fmtDateTime, TARGET_STYLE } from '../lib'
 import { LimIcon } from './Guide'
 import { AnimatedNumber, IconButton } from './ui'
 
 const GROUPS: { title: string; match: (b: Bucket) => boolean }[] = [
-  { title: 'Libérer de la place', match: (b) => b.action === 'quarantine' },
-  { title: 'Ranger', match: (b) => b.action === 'move' },
-  { title: 'À vérifier', match: (b) => b.action === null },
+  { title: tr('Libérer de la place'), match: (b) => b.action === 'quarantine' },
+  { title: tr('Ranger'), match: (b) => b.action === 'move' },
+  { title: tr('À vérifier'), match: (b) => b.action === null },
 ]
 
 export function Sidebar({ buckets, activeKey, onSelect, quarantine, quarantineActive, onQuarantine }: {
@@ -71,7 +72,7 @@ export function Sidebar({ buckets, activeKey, onSelect, quarantine, quarantineAc
         )
       })}
       <div>
-        <div className="mb-1.5 px-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Déjà mis de côté</div>
+        <div className="mb-1.5 px-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{tr('Déjà mis de côté')}</div>
         <button
           type="button"
           data-tour="quarantine-nav"
@@ -84,14 +85,14 @@ export function Sidebar({ buckets, activeKey, onSelect, quarantine, quarantineAc
           )}
           <span className="relative flex items-center gap-2.5">
             <Trash2 size={13} className="text-c shrink-0" />
-            <span className={`flex-1 truncate text-[14px] ${quarantineActive ? 'font-semibold' : 'text-ink/85'}`}>Quarantaine</span>
-            <span className="font-mono text-[11.5px] text-muted">{quarantine?.count ? fmtBytes(quarantine.bytes) : 'vide'}</span>
+            <span className={`flex-1 truncate text-[14px] ${quarantineActive ? 'font-semibold' : 'text-ink/85'}`}>{tr('Quarantaine')}</span>
+            <span className="font-mono text-[11.5px] text-muted">{quarantine?.count ? fmtBytes(quarantine.bytes) : tr('vide')}</span>
           </span>
         </button>
       </div>
       <div className="mx-3 mt-auto flex gap-2 rounded-xl border border-dashed border-line p-3 text-[12px] leading-snug text-muted">
         <ShieldCheck size={16} className="mt-px shrink-0" />
-        Rien n'est supprimé directement. La quarantaine garde tout 30 jours et chaque action s'annule.
+        {tr("Rien n'est supprimé directement. La quarantaine garde tout 30 jours et chaque action s'annule.")}
       </div>
     </nav>
   )
@@ -110,13 +111,16 @@ function Stat({ label, value, format, accent, wide }: { label: string; value: nu
 
 function AutoPill({ auto, onOpen }: { auto: AutoStatus; onOpen: () => void }) {
   const days = auto.delay_hours / 24
-  const delay = days >= 1 ? `${Math.round(days)} j` : `${Math.round(auto.delay_hours)} h`
+  const delay = days >= 1 ? tr('{n} j', { n: Math.round(days) }) : tr('{n} h', { n: Math.round(auto.delay_hours) })
   const title = !auto.configured
-    ? 'Tri automatique pas encore réglé. Clic : choisir ce que je range tout seul, et quand.'
+    ? tr('Tri automatique pas encore réglé. Clic : choisir ce que je range tout seul, et quand.')
     : auto.enabled
-    ? `Tri automatique actif : les téléchargements arrivés depuis le ${fmtDateTime(auto.since)} sont rangés après ${delay}.\n` +
-      `Vérification toutes les ${auto.interval_minutes} min${auto.last_run ? ` · dernière ${fmtDateTime(auto.last_run)}` : ''}.\nClic : voir et régler.`
-    : 'Tri automatique en pause. Clic : voir et régler.'
+    ? tr('Tri automatique actif : les téléchargements arrivés depuis le {since} sont rangés après {delay}.', { since: fmtDateTime(auto.since), delay }) + '\n' +
+      (auto.last_run
+        ? tr('Vérification toutes les {n} min · dernière {last}.', { n: auto.interval_minutes, last: fmtDateTime(auto.last_run) })
+        : tr('Vérification toutes les {n} min.', { n: auto.interval_minutes })) +
+      '\n' + tr('Clic : voir et régler.')
+    : tr('Tri automatique en pause. Clic : voir et régler.')
   return (
     <button
       type="button"
@@ -134,7 +138,7 @@ function AutoPill({ auto, onOpen }: { auto: AutoStatus; onOpen: () => void }) {
         <span className="relative h-2 w-2 rounded-full" style={{ background: !auto.configured ? 'var(--accent)' : auto.enabled ? 'var(--c-images)' : 'var(--faint)' }} />
       </span>
       <Zap size={13} />
-      {!auto.configured ? 'Régler le tri auto' : auto.enabled ? `Tri auto · ${delay}` : 'Tri auto en pause'}
+      {!auto.configured ? tr('Régler le tri auto') : auto.enabled ? tr('Tri auto · {delay}', { delay }) : tr('Tri auto en pause')}
       {auto.last_error && <span className="text-[var(--c-pdf)]" title={auto.last_error}>!</span>}
     </button>
   )
@@ -169,24 +173,24 @@ export function Header({ root, buckets, scanning, historyCount, auto, onScan, on
       <div className="ml-auto flex shrink-0 items-center gap-5 xl:gap-7">
         {buckets.length > 0 && (
           <>
-            <Stat label="éléments" value={count} format={fmtCount} />
-            <Stat label="au total" value={sum(() => true)} format={fmtBytes} wide />
-            <Stat label="libérables" value={sum((b) => b.action === 'quarantine')} format={fmtBytes} accent />
-            <Stat label="à ranger" value={sum((b) => b.action === 'move')} format={fmtBytes} wide />
+            <Stat label={tr('éléments')} value={count} format={fmtCount} />
+            <Stat label={tr('au total')} value={sum(() => true)} format={fmtBytes} wide />
+            <Stat label={tr('libérables')} value={sum((b) => b.action === 'quarantine')} format={fmtBytes} accent />
+            <Stat label={tr('à ranger')} value={sum((b) => b.action === 'move')} format={fmtBytes} wide />
           </>
         )}
         <div className="flex items-center gap-2">
           {auto && <AutoPill auto={auto} onOpen={onAuto} />}
-          <IconButton tour="scan" title={scanning ? 'Scan en cours…' : 'Rescanner'} onClick={onScan}>
+          <IconButton tour="scan" title={scanning ? tr('Scan en cours…') : tr('Rescanner')} onClick={onScan}>
             <RefreshCw size={16} className={scanning ? 'animate-spin' : ''} />
           </IconButton>
-          <IconButton tour="history" title="Historique et quarantaine" onClick={onHistory}>
+          <IconButton tour="history" title={tr('Historique et quarantaine')} onClick={onHistory}>
             <History size={16} />
             {historyCount > 0 && (
               <span className="absolute -right-1 -top-1 rounded-full bg-accent-strong px-1.5 font-mono text-[11px] leading-4 text-white">{historyCount}</span>
             )}
           </IconButton>
-          <IconButton tour="guide" title="Lim, le guide de l'appli" onClick={onGuide}>
+          <IconButton tour="guide" title={tr("Lim, le guide de l'appli")} onClick={onGuide}>
             <LimIcon size={20} />
           </IconButton>
         </div>

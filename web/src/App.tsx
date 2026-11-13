@@ -9,9 +9,17 @@ import { Guide, guidePref } from './components/Guide'
 import { AutoPanel } from './components/AutoPanel'
 import { ScanState } from './components/ScanState'
 import { Header, Sidebar } from './components/Sidebar'
-import { fmtBytes, plural, TARGET_STYLE } from './lib'
+import { LANG, tr } from './i18n'
+import { fmtBytes, fmtCount, plural, TARGET_STYLE } from './lib'
 
 const MAX_FLIGHTS = 40
+
+/** Pluriel selon la langue : en français 0 et 1 sont au singulier, en anglais seul 1 l'est. */
+const many = (n: number) => (LANG === 'en' ? n !== 1 : n > 1)
+
+/** Toast du tri auto : la phrase entière change avec le nombre, pour l'accord. */
+const autoSortedText = (n: number) =>
+  tr(many(n) ? 'Tri auto : {n} éléments rangés' : 'Tri auto : {n} élément rangé', { n: fmtCount(n) })
 
 const rectOf = (el: Element): Rect => {
   const r = el.getBoundingClientRect()
@@ -143,7 +151,7 @@ export default function App() {
           const n = last.batches.reduce((s, b) => s + b.done, 0)
           setToast({
             id: Date.now(),
-            text: `Tri auto : ${plural(n, 'élément')} rangé${n > 1 ? 's' : ''}`,
+            text: autoSortedText(n),
             detail: last.batches.map((b) => b.label.replace('Auto · ', '')).join(' · '),
             color: 'var(--c-images)',
             undoBatch: last.batches.length === 1 ? last.batches[0].batch_id : undefined,
@@ -185,11 +193,11 @@ export default function App() {
       lastAutoEvent.current = a.events.at(-1)?.id ?? lastAutoEvent.current
       setAuto(a)
       if (!r.batches.length) {
-        setToast({ id: Date.now(), text: 'Rien à ranger pour l\'instant', detail: 'Les fichiers en attente n\'ont pas encore atteint le délai.', color: 'var(--c-images)' })
+        setToast({ id: Date.now(), text: tr('Rien à ranger pour l\'instant'), detail: tr('Les fichiers en attente n\'ont pas encore atteint le délai.'), color: 'var(--c-images)' })
         return
       }
       const n = r.batches.reduce((s, b) => s + b.done, 0)
-      setToast({ id: Date.now(), text: `Tri auto : ${plural(n, 'élément')} rangé${n > 1 ? 's' : ''}`, color: 'var(--c-images)',
+      setToast({ id: Date.now(), text: autoSortedText(n), color: 'var(--c-images)',
                  detail: r.batches.map((b) => b.label.replace('Auto · ', '')).join(' · '),
                  undoBatch: r.batches.length === 1 ? r.batches[0].batch_id : undefined })
       api.plan().then((p) => p.status === 'ready' && setPlan(p))
@@ -208,19 +216,19 @@ export default function App() {
       await api.scan()
       setPlan((p) => (p ? { ...p, status: 'scanning', phase: '', buckets: undefined } : p))
     } catch (e) {
-      setToast({ id: Date.now(), text: 'Scan impossible', detail: e instanceof Error ? e.message : String(e), color: 'var(--c-pdf)', error: true })
+      setToast({ id: Date.now(), text: tr('Scan impossible'), detail: e instanceof Error ? e.message : String(e), color: 'var(--c-pdf)', error: true })
     }
     loadPlan()
   }, [loadPlan])
 
   const notifyError = (e: unknown) =>
-    setToast({ id: Date.now(), text: 'Action impossible', detail: e instanceof Error ? e.message : String(e), color: 'var(--c-pdf)', error: true })
+    setToast({ id: Date.now(), text: tr('Action impossible'), detail: e instanceof Error ? e.message : String(e), color: 'var(--c-pdf)', error: true })
 
   /* ——— Actions : déplacer / mettre en quarantaine, avec envol des miniatures vers le dossier ——— */
   const showResult = useCallback((res: ApplyResult) => {
     if (!planRef.current?.buckets) return
     if (!res.done) {
-      notifyError(res.failed[0]?.error ?? 'aucun élément déplacé')
+      notifyError(res.failed[0]?.error ?? tr('aucun élément déplacé'))
       return
     }
     const byId = new Map(planRef.current.buckets.flatMap((b) => b.entries.map((e) => [e.id, e] as const)))
@@ -255,7 +263,7 @@ export default function App() {
     setToast({
       id: Date.now(),
       text: `${plural(res.done, 'élément')} → ${label}`,
-      detail: `${fmtBytes(res.bytes)}${res.errors ? ` · ${res.errors} ignoré(s) : ${res.failed[0].error}` : ''}`,
+      detail: `${fmtBytes(res.bytes)}${res.errors ? ` · ${tr('{n} ignoré(s) : {error}', { n: res.errors, error: res.failed[0].error })}` : ''}`,
       color: TARGET_STYLE[res.target].color,
       undoBatch: res.batch_id,
     })
@@ -265,7 +273,7 @@ export default function App() {
   const followJob = useCallback(async (start: JobStart) => {
     setTransfers((t) => ({ ...t, [start.job]: { target: start.target, total: start.total, done: 0, ids: start.ids } }))
     const label = planRef.current?.targets.find((t) => t.key === start.target)?.label ?? start.target
-    setToast({ id: Date.now(), text: `Transfert vers ${label} lancé`, detail: `${fmtBytes(start.total)} · tu peux continuer à trier`,
+    setToast({ id: Date.now(), text: tr('Transfert vers {label} lancé', { label }), detail: tr('{size} · tu peux continuer à trier', { size: fmtBytes(start.total) }),
                color: TARGET_STYLE[start.target].color })
     try {
       for (;;) {
@@ -286,7 +294,7 @@ export default function App() {
     if (!ids.length || busyRef.current || !planRef.current?.buckets) return
     const t = target && planRef.current.targets.find((x) => x.key === target)
     if (t && !t.available) {
-      setToast({ id: Date.now(), text: `${t.label} indisponible`, detail: t.hint, color: TARGET_STYLE[t.key].color, error: true })
+      setToast({ id: Date.now(), text: tr('{label} indisponible', { label: t.label }), detail: t.hint, color: TARGET_STYLE[t.key].color, error: true })
       return
     }
     setBusy(true)
@@ -315,8 +323,8 @@ export default function App() {
   const undo = useCallback(async (batchId: number) => {
     try {
       const res = await api.undo(batchId)
-      setToast({ id: Date.now(), text: `${plural(res.restored, 'élément')} remis dans Téléchargements`, color: 'var(--c-neutral)',
-                 detail: res.errors ? `${res.errors} erreur(s)` : undefined, error: res.errors > 0 })
+      setToast({ id: Date.now(), text: tr('{items} remis dans Téléchargements', { items: plural(res.restored, 'élément') }), color: 'var(--c-neutral)',
+                 detail: res.errors ? tr('{n} erreur(s)', { n: res.errors }) : undefined, error: res.errors > 0 })
       loadHistory()
       if (res.rescan) { startScan(); return }
       if (!res.ids.length) return
@@ -359,7 +367,7 @@ export default function App() {
   const purge = useCallback(async () => {
     try {
       const r = await api.purge()
-      setToast({ id: Date.now(), text: r.batches ? `${fmtBytes(r.bytes)} supprimés définitivement` : 'Rien d\'assez ancien à purger',
+      setToast({ id: Date.now(), text: r.batches ? tr('{size} supprimés définitivement', { size: fmtBytes(r.bytes) }) : tr('Rien d\'assez ancien à purger'),
                  color: TARGET_STYLE.quarantine.color })
       loadHistory()
     } catch (e) { notifyError(e) }
@@ -368,8 +376,10 @@ export default function App() {
   const emptyQuarantine = useCallback(async () => {
     try {
       const r = await api.purge(true)
-      setToast({ id: Date.now(), text: `Quarantaine vidée : ${fmtBytes(r.bytes)} libérés`, color: TARGET_STYLE.quarantine.color,
-                 detail: `${plural(r.batches, 'lot')} supprimé${r.batches > 1 ? 's' : ''} définitivement (le reçu garde noms et liens).` })
+      setToast({ id: Date.now(), text: tr('Quarantaine vidée : {size} libérés', { size: fmtBytes(r.bytes) }), color: TARGET_STYLE.quarantine.color,
+                 detail: tr(many(r.batches)
+                   ? '{n} lots supprimés définitivement (le reçu garde noms et liens).'
+                   : '{n} lot supprimé définitivement (le reçu garde noms et liens).', { n: fmtCount(r.batches) }) })
       loadHistory()
     } catch (e) { notifyError(e) }
   }, [loadHistory])
@@ -377,7 +387,7 @@ export default function App() {
   const purgeBatch = useCallback(async (id: number) => {
     try {
       const r = await api.purgeBatch(id)
-      setToast({ id: Date.now(), text: `${fmtBytes(r.bytes)} libérés`, detail: 'Supprimé définitivement de la quarantaine (le reçu garde nom et lien).',
+      setToast({ id: Date.now(), text: tr('{size} libérés', { size: fmtBytes(r.bytes) }), detail: tr('Supprimé définitivement de la quarantaine (le reçu garde nom et lien).'),
                  color: TARGET_STYLE.quarantine.color })
       loadHistory()
     } catch (e) { notifyError(e) }
@@ -387,8 +397,8 @@ export default function App() {
   const restoreItem = useCallback(async (op: number, name: string) => {
     try {
       const res = await api.restoreItem(op)
-      setToast({ id: Date.now(), text: `« ${res.name} » remis dans Téléchargements`, color: 'var(--c-neutral)',
-                 detail: res.rescan ? 'Relance un scan pour le retrouver dans les lots.' : undefined })
+      setToast({ id: Date.now(), text: tr('« {name} » remis dans Téléchargements', { name: res.name }), color: 'var(--c-neutral)',
+                 detail: res.rescan ? tr('Relance un scan pour le retrouver dans les lots.') : undefined })
       loadHistory()
       if (res.ids.length) {
         const p = await api.plan()
@@ -402,7 +412,7 @@ export default function App() {
       }
       return true
     } catch (e) {
-      notifyError(e instanceof Error ? new Error(`${name} : ${e.message}`) : e)
+      notifyError(e instanceof Error ? new Error(tr('{name} : {error}', { name, error: e.message })) : e)
       return false
     }
   }, [loadHistory])
@@ -452,7 +462,7 @@ export default function App() {
   const onKeeper = useCallback((id: number) => {
     const k = planRef.current?.buckets?.flatMap((b) => b.entries).find((e) => e.id === id)
     if (k) setPeek(k)
-    else setToast({ id: Date.now(), text: 'Exemplaire gardé déjà rangé', detail: 'Relance un scan pour le retrouver.', color: 'var(--c-documents)' })
+    else setToast({ id: Date.now(), text: tr('Exemplaire gardé déjà rangé'), detail: tr('Relance un scan pour le retrouver.'), color: 'var(--c-documents)' })
   }, [])
 
   // Place disponible pour le dock : il rétrécit ses dossiers plutôt que de déborder
@@ -551,7 +561,7 @@ export default function App() {
                   onOpen={(k) => {
                     const t = plan!.targets.find((x) => x.key === k)
                     if (k === 'quarantine') setShowQuarantine(true)
-                    else if (t && !t.available) setToast({ id: Date.now(), text: `${t.label} indisponible`, detail: t.hint, color: TARGET_STYLE[k].color })
+                    else if (t && !t.available) setToast({ id: Date.now(), text: tr('{label} indisponible', { label: t.label }), detail: t.hint, color: TARGET_STYLE[k].color })
                     else api.openTarget(k).catch(notifyError)
                   }}
                 />

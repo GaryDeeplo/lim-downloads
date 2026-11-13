@@ -8,11 +8,20 @@ from fastapi.testclient import TestClient
 
 from dm.actions import Journal, Op
 from dm.config import Config
+from dm.i18n import set_language
 from dm.rules import build_plan
 from dm.scanner import scan
 from dm.server import create_app
 
 LATER = time.time() + 400 * 86400  # tout paraît « vieux » pour les règles basées sur l'âge
+
+
+@pytest.fixture(autouse=True)
+def french():
+    """Les tests vérifient les textes français : la langue de la machine (CI en anglais) ne doit pas compter."""
+    set_language("fr")
+    yield
+    set_language("fr")
 
 
 @pytest.fixture
@@ -22,7 +31,7 @@ def cfg(tmp_path: Path) -> Config:
     return Config(downloads=dl, data_dir=tmp_path / "data", videos_dest=tmp_path / "Videos",
                   pictures_dest=tmp_path / "Pictures", music_dest=tmp_path / "Music",
                   documents_dest=tmp_path / "Documents", onedrive_dest=None, detect_remote=False, backup_roots=[],
-                  auto_enabled=True)
+                  auto_enabled=True, language="fr")
 
 
 def write(path: Path, data: bytes = b"x") -> Path:
@@ -502,3 +511,108 @@ def test_api_refuses_requests_from_other_sites(cfg):
     rebind = TestClient(create_app(cfg), base_url="http://attaquant.example:8765")    # DNS rebinding
     assert rebind.get("/api/history").status_code == 403
     assert client.post("/api/purge?all=true", headers=ok | {"Origin": "http://127.0.0.1:8765"}).status_code == 200
+
+
+# ——— Langue : français / anglais ———
+
+import ast
+import json
+import string
+
+from dm import i18n
+from dm.config import load_config
+from dm.receipts import HEADER, write_receipts
+from dm.rules import TARGETS
+from dm.server import FAMILIES
+
+
+def test_tr_placeholders_in_both_languages():
+    assert i18n.tr("copie de « {name} »", name="a.pdf") == "copie de « a.pdf »"
+    assert i18n.lang() == "fr"
+    set_language("en")
+    assert i18n.lang() == "en" and i18n.LANG() == "en"
+    assert i18n.tr("copie de « {name} »", name="a.pdf") == "copy of “a.pdf”"
+    assert i18n.tr("{n} jours", n=3) == "3 days"
+    assert i18n.tr("texte sans traduction") == "texte sans traduction"      # clé absente : le français reste
+    set_language("auto")
+    assert i18n.lang() in ("fr", "en")
+
+
+def test_every_translation_key_exists_with_same_placeholders():
+    """Chaque tr("…") de dm/ a sa traduction anglaise, avec les mêmes {variables}."""
+    keys = set()
+    for path in Path(i18n.__file__).parent.glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "tr"
+                    and node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
+                keys.add(node.args[0].value)
+    keys |= {t.label_fr for t in TARGETS.values()} | {label for _, label, _ in FAMILIES} | set(HEADER)
+    fields = lambda text: {f for _, f, _, _ in string.Formatter().parse(text) if f}
+    missing = sorted(k for k in keys if k not in i18n.EN)
+    assert not missing
+    assert all(fields(k) == fields(i18n.EN[k]) for k in keys)
+
+
+def test_english_plan_titles_and_reasons(cfg):
+    set_language("en")
+    big = os.urandom(300_000)
+    write(cfg.downloads / "rapport.pdf", big)
+    write(cfg.downloads / "rapport (1).pdf", big)
+    write(cfg.downloads / "dl.crdownload", b"..")
+    write(cfg.downloads / "vide.txt", b"")
+    write(cfg.downloads / "invoice.part", b"..")
+    write(cfg.downloads / "pack" / "a.txt", b"a")
+    b = buckets(cfg)
+    assert b["duplicates"].title == "Exact duplicates" and b["incomplete"].title == "Incomplete downloads"
+    assert b["duplicates"].entries[0].reason == "copy of “rapport.pdf”"
+    reasons = {e.item.name: e.reason for e in b["incomplete"].entries}
+    assert reasons == {"dl.crdownload": "partial", "vide.txt": "empty (0 bytes)",
+                       "invoice.part": "partial · sensitive name, unchecked"}
+    assert b["folders"].title == "Folders" and b["folders"].entries[0].reason == "1 file"
+    assert TARGETS["folders"].label == "Folders"
+
+
+def test_english_index_and_api(cfg):
+    cfg.language = "en"
+    client = local_client(cfg)
+    page = client.get("/")
+    assert '<html lang="en"' in page.text and page.headers["cache-control"] == "no-cache"
+    assert client.get("/api/plan").json()["lang"] == "en"
+    targets = {t["key"]: t for t in client.get("/api/plan").json()["targets"]}
+    assert targets["quarantine"]["label"] == "Quarantine" and targets["videos"]["label"] == "Videos"
+    assert client.post("/api/apply", json={"ids": [1]}).json()["detail"] == "nothing to apply"
+    cfg.language = "fr"
+    assert '<html lang="fr"' in local_client(cfg).get("/").text
+
+
+def test_english_auto_label_keeps_prefix(cfg):
+    set_language("en")
+    auto = AutoSorter(cfg, Journal(cfg))
+    time.sleep(0.05)
+    write(cfg.downloads / "film.mkv", b"v")
+    batches = auto.run_once(now=time.time() + 8 * 86400)
+    assert [b["label"] for b in batches] == ["Auto · Videos → Videos"]
+    assert auto.journal.history()[0]["label"].startswith("Auto · ")
+
+
+def test_default_folders_follow_language(tmp_path, monkeypatch):
+    set_language("en")
+    assert Config().videos_dest.name == "Downloads"
+    set_language("fr")
+    assert Config().videos_dest.name == "Téléchargements"
+    conf = tmp_path / "config.json"
+    conf.write_text(json.dumps({"language": "en", "detect_remote": False}), encoding="utf-8")
+    monkeypatch.setenv("DM_CONFIG", str(conf))
+    monkeypatch.setenv("OneDrive", str(tmp_path / "OneDrive"))
+    loaded = load_config()                                        # la langue est fixée avant les dossiers par défaut
+    assert i18n.lang() == "en" and loaded.language == "en"
+    assert loaded.documents_dest.name == "Downloads" and loaded.onedrive_dest.name == "Archived downloads"
+    assert {"invoice", "payslip", "bank statement", "facture", "fiche de paie"} <= set(loaded.sensitive_keywords)
+
+
+def test_english_receipts(tmp_path):
+    set_language("en")
+    path = tmp_path / "r.csv"
+    write_receipts(path, [{"name": "a.bin", "size": 2048, "label": "Auto · x → Quarantine", "src": "s", "dst": "d"}])
+    lines = path.read_text(encoding="utf-8-sig").splitlines()
+    assert lines[0].startswith("date,name,size,bytes,") and ",2 KB,2048," in lines[1]

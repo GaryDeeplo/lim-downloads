@@ -12,6 +12,7 @@ from typing import Callable
 from .backup import BackupIndex
 from .config import Config
 from .detect import extracted_folder, find_duplicates, pick_keeper
+from .i18n import tr
 from .scanner import Item
 from .sources import detect as detect_source
 
@@ -40,9 +41,13 @@ def _year(item: Item) -> str:
 @dataclass(frozen=True)
 class Target:
     key: str
-    label: str
+    label_fr: str                   # libellé français ; `label` le donne dans la langue de l'appli
     root: Callable[[Config], Path]
     sub: Callable[[Item], str] | None = None
+
+    @property
+    def label(self) -> str:
+        return tr(self.label_fr)
 
 
 # Destinations du dock. La quarantaine est une cible à part (pas de dossier final).
@@ -85,9 +90,14 @@ def group_exports(items: list[Item]) -> list[Item]:
             rest.append(parts[0])
             continue
         parts.sort(key=lambda i: i.name)
-        rest.append(Item(parts[0].path, f"{base} ({len(parts)} parties)", False, sum(p.size for p in parts),
+        rest.append(Item(parts[0].path, tr("{base} ({n} parties)", base=base, n=len(parts)), False, sum(p.size for p in parts),
                          max(p.mtime for p in parts), ".zip", len(parts), members=parts))
     return rest
+
+
+def _count(n: int, one: str, many: str) -> str:
+    """« 1 fichier » / « 3 fichiers », dans la langue de l'appli."""
+    return tr(one if n == 1 else many, n=n)
 
 
 def _short(path: str) -> str:
@@ -132,20 +142,29 @@ def build_plan(items: list[Item], cfg: Config, now: float | None = None,
             it.source = src
 
     b = {bk.key: bk for bk in [
-        Bucket("recent", "Récents", f"Arrivés il y a moins de {cfg.protect_days} jours : protégés, rien n'est coché.", None),
-        Bucket("incomplete", "Incomplets", "Téléchargements partiels ou fichiers vides.", QUARANTINE),
-        Bucket("duplicates", "Doublons exacts", "Contenu identique octet par octet : un exemplaire est gardé.", QUARANTINE),
-        Bucket("extracted_zips", "Zips déjà extraits", "Le dossier voisin contient tout le contenu du zip (mêmes fichiers, mêmes tailles).", QUARANTINE),
-        Bucket("backed_up", "Déjà sauvegardé ailleurs", "Tout le contenu existe déjà dans Documents, Images, OneDrive… (vérifié octet par octet). Les copies seulement « en ligne » sont décochées.", QUARANTINE),
-        Bucket("redownload", "Retéléchargeable", f"Torrents, exports Google Drive et fichiers publics de plus de {cfg.redownload_min_mb} Mo. Rien n'est coché : un reçu garde le lien.", QUARANTINE),
-        Bucket("installers", "Installeurs anciens", f"Programmes d'installation de plus de {cfg.installer_days} jours.", QUARANTINE),
-        Bucket("videos", "Vidéos", "Toutes les vidéos.", "videos"),
-        Bucket("images", "Images", "Rangées par mois d'arrivée.", "images"),
-        Bucket("documents", "Documents", "Rangés par année d'arrivée.", "documents"),
-        Bucket("audio", "Audio", "Musique, sons, enregistrements.", "audio"),
-        Bucket("archives", "Archives anciennes", f"Archives de plus de {cfg.old_archive_days} jours, non extraites.", "archives"),
-        Bucket("folders", "Dossiers", "Déplacés en bloc, contenu intact.", "folders"),
-        Bucket("other", "À regarder", "Aucune règle ne s'applique : glisse-les vers un dossier si besoin.", None),
+        Bucket("recent", tr("Récents"),
+               tr("Arrivés il y a moins de {days} jours : protégés, rien n'est coché.", days=cfg.protect_days), None),
+        Bucket("incomplete", tr("Incomplets"), tr("Téléchargements partiels ou fichiers vides."), QUARANTINE),
+        Bucket("duplicates", tr("Doublons exacts"), tr("Contenu identique octet par octet : un exemplaire est gardé."),
+               QUARANTINE),
+        Bucket("extracted_zips", tr("Zips déjà extraits"),
+               tr("Le dossier voisin contient tout le contenu du zip (mêmes fichiers, mêmes tailles)."), QUARANTINE),
+        Bucket("backed_up", tr("Déjà sauvegardé ailleurs"),
+               tr("Tout le contenu existe déjà dans Documents, Images, OneDrive… (vérifié octet par octet). "
+                  "Les copies seulement « en ligne » sont décochées."), QUARANTINE),
+        Bucket("redownload", tr("Retéléchargeable"),
+               tr("Torrents, exports Google Drive et fichiers publics de plus de {mb} Mo. Rien n'est coché : "
+                  "un reçu garde le lien.", mb=cfg.redownload_min_mb), QUARANTINE),
+        Bucket("installers", tr("Installeurs anciens"),
+               tr("Programmes d'installation de plus de {days} jours.", days=cfg.installer_days), QUARANTINE),
+        Bucket("videos", tr("Vidéos"), tr("Toutes les vidéos."), "videos"),
+        Bucket("images", tr("Images"), tr("Rangées par mois d'arrivée."), "images"),
+        Bucket("documents", tr("Documents"), tr("Rangés par année d'arrivée."), "documents"),
+        Bucket("audio", tr("Audio"), tr("Musique, sons, enregistrements."), "audio"),
+        Bucket("archives", tr("Archives anciennes"),
+               tr("Archives de plus de {days} jours, non extraites.", days=cfg.old_archive_days), "archives"),
+        Bucket("folders", tr("Dossiers"), tr("Déplacés en bloc, contenu intact."), "folders"),
+        Bucket("other", tr("À regarder"), tr("Aucune règle ne s'applique : glisse-les vers un dossier si besoin."), None),
     ]}
     assigned: set[str] = set()
 
@@ -156,34 +175,34 @@ def build_plan(items: list[Item], cfg: Config, now: float | None = None,
             key, checked = "recent", False
         bucket = b[key]
         if bucket.action == QUARANTINE and key not in ("duplicates", "backed_up") and _is_sensitive(item.name, cfg):
-            checked, reason = False, (reason + " · nom sensible, décoché").lstrip(" ·")
+            checked, reason = False, (reason + " · " + tr("nom sensible, décoché")).lstrip(" ·")
         if bucket.target is None:
             checked = False
         assigned.add(item.path)
         dest = target_dest(bucket.target, item, cfg) if bucket.target else None
         bucket.entries.append(Entry(item, reason, str(dest) if dest else None, checked, keeper))
 
-    progress("Fichiers incomplets")
+    progress(tr("Fichiers incomplets"))
     for it in items:
         if not it.is_dir and (it.ext in INCOMPLETE or it.size == 0):
-            put("incomplete", it, "partiel" if it.size else "vide (0 octet)")
+            put("incomplete", it, tr("partiel") if it.size else tr("vide (0 octet)"))
 
-    progress("Recherche des doublons")
+    progress(tr("Recherche des doublons"))
     for group in find_duplicates([i for i in items if i.path not in assigned and not i.members]):
         keeper = pick_keeper(group)
         for it in group:
             if it is not keeper:
-                put("duplicates", it, f"copie de « {keeper.name} »", keeper=keeper)
+                put("duplicates", it, tr("copie de « {name} »", name=keeper.name), keeper=keeper)
 
-    progress("Vérification des zips")
+    progress(tr("Vérification des zips"))
     dirs_by_name = {i.name.lower(): i for i in items if i.is_dir}
     for it in items:
         if it.ext == ".zip" and it.path not in assigned and not it.members:
             folder = extracted_folder(it, dirs_by_name)
             if folder:
-                put("extracted_zips", it, f"extrait dans « {folder.name} »")
+                put("extracted_zips", it, tr("extrait dans « {name} »", name=folder.name))
 
-    progress("Recherche de copies sauvegardées")
+    progress(tr("Recherche de copies sauvegardées"))
     if backup is None:
         backup = BackupIndex(cfg.backup_roots, [cfg.downloads, cfg.data_dir])
     for it in items:
@@ -191,22 +210,22 @@ def build_plan(items: list[Item], cfg: Config, now: float | None = None,
             continue
         verdict = backup.check(it)
         if verdict:
-            note = "" if verdict.sure else " · copie en ligne uniquement, non vérifiée"
-            put("backed_up", it, f"copie : {_short(verdict.where)}{note}", checked=verdict.sure)
+            note = "" if verdict.sure else " · " + tr("copie en ligne uniquement, non vérifiée")
+            put("backed_up", it, tr("copie : {where}", where=_short(verdict.where)) + note, checked=verdict.sure)
 
     min_size = cfg.redownload_min_mb * 1024 * 1024
     for it in items:
         if it.path not in assigned and it.source.redownloadable and it.size >= min_size:
-            put("redownload", it, f"source : {it.source.label}", checked=False)
+            put("redownload", it, tr("source : {source}", source=it.source.label), checked=False)
 
-    progress("Classement")
+    progress(tr("Classement"))
     for it in items:
         if it.path in assigned:
             continue
         if it.is_dir:
-            put("folders", it, f"{it.file_count} fichiers")
+            put("folders", it, _count(it.file_count, "{n} fichier", "{n} fichiers"))
         elif it.ext in INSTALLERS and age(it) >= cfg.installer_days:
-            put("installers", it, f"{int(age(it))} jours")
+            put("installers", it, _count(int(age(it)), "{n} jour", "{n} jours"))
         elif it.ext in VIDEOS:
             put("videos", it)
         elif it.ext in IMAGES:
@@ -216,9 +235,9 @@ def build_plan(items: list[Item], cfg: Config, now: float | None = None,
         elif it.ext in AUDIO:
             put("audio", it)
         elif it.ext in ARCHIVES and age(it) >= cfg.old_archive_days:
-            put("archives", it, f"{int(age(it))} jours")
+            put("archives", it, _count(int(age(it)), "{n} jour", "{n} jours"))
         else:
-            put("other", it, f"archive de {int(age(it))} jours, non extraite" if it.ext in ARCHIVES else "")
+            put("other", it, tr("archive de {n} jours, non extraite", n=int(age(it))) if it.ext in ARCHIVES else "")
 
     for bucket in b.values():
         bucket.entries.sort(key=lambda e: e.item.size, reverse=True)

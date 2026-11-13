@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ExternalLink, Eye, FileSpreadsheet, FolderSearch, Trash2, Undo2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { api, type Contents, type Entry, type History } from '../api'
+import { tr } from '../i18n'
 import { family, fmtBytes, fmtCount, fmtDate, fmtDateTime, plural, TARGET_STYLE } from '../lib'
 import { Thumb } from './Thumb'
 import { HoldButton } from './ui'
@@ -40,7 +41,7 @@ export function Toast({ toast, onUndo, onClose }: { toast: ToastData | null; onU
                 onClick={() => onUndo(toast.undoBatch!)}
                 className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[12.5px] font-medium hover:bg-surface-strong"
               >
-                <Undo2 size={13} /> Annuler
+                <Undo2 size={13} /> {tr('Annuler')}
               </button>
             )}
             <motion.span
@@ -79,7 +80,7 @@ export function HistoryPanel({ open, history, onClose, onUndo, onPurge, onPurgeB
             ref={ref}
             role="dialog"
             aria-modal="true"
-            aria-label="Historique et quarantaine"
+            aria-label={tr('Historique et quarantaine')}
             initial={{ x: 420 }}
             animate={{ x: 0 }}
             exit={{ x: 420 }}
@@ -87,36 +88,36 @@ export function HistoryPanel({ open, history, onClose, onUndo, onPurge, onPurgeB
             className="scroll-area fixed bottom-3 right-3 top-3 z-50 flex w-[min(380px,calc(100vw-24px))] flex-col overflow-y-auto rounded-[24px] border border-line bg-surface-strong p-5 shadow-2xl"
           >
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[22px] font-semibold tracking-tight">Historique</h2>
-              <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-strong" aria-label="Fermer"><X size={16} /></button>
+              <h2 className="text-[22px] font-semibold tracking-tight">{tr('Historique')}</h2>
+              <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-strong" aria-label={tr('Fermer')}><X size={16} /></button>
             </div>
 
             <div className="tint mb-6 rounded-2xl p-4" style={{ '--c': TARGET_STYLE.quarantine.color } as CSSProperties}>
-              <div className="text-c font-mono text-[11px] uppercase tracking-[0.16em]">Quarantaine</div>
+              <div className="text-c font-mono text-[11px] uppercase tracking-[0.16em]">{tr('Quarantaine')}</div>
               {q && q.count ? (
                 <>
                   <div className="mt-1 text-[26px] font-semibold tracking-tight">{fmtBytes(q.bytes)}</div>
                   <div className="font-mono text-[11px] text-muted">
-                    {plural(q.count, 'élément')} · plus ancien {q.oldest ? fmtDate(q.oldest) : '—'}
+                    {plural(q.count, 'élément')} · {tr('plus ancien {date}', { date: q.oldest ? fmtDate(q.oldest) : '—' })}
                   </div>
                   <button type="button" onClick={onShowQuarantine} className="mt-3 flex items-center gap-1.5 rounded-full border border-line bg-surface-strong px-3.5 py-1.5 text-[12.5px] font-medium hover:bg-paper">
-                    <Eye size={13} /> Voir le contenu
+                    <Eye size={13} /> {tr('Voir le contenu')}
                   </button>
                   <HoldButton color={TARGET_STYLE.quarantine.color} onConfirm={onPurge} duration={1.2} className="mt-3 !px-4 !py-2 !text-[12.5px]">
-                    Maintenir : supprimer définitivement ce qui a plus de {history!.quarantine_days} j
+                    {tr('Maintenir : supprimer définitivement ce qui a plus de {days} j', { days: history!.quarantine_days })}
                   </HoldButton>
                 </>
               ) : (
-                <div className="mt-1 text-[14px] text-muted">Vide.</div>
+                <div className="mt-1 text-[14px] text-muted">{tr('Vide.')}</div>
               )}
               {history?.receipts && (
                 <button type="button" onClick={onReceipts} className="mt-3 flex items-start gap-1.5 text-left text-[12.5px] font-medium underline decoration-line underline-offset-2 hover:decoration-ink">
-                  <FileSpreadsheet size={13} className="mt-0.5 shrink-0" /> Reçus : noms, tailles et liens de tout ce qui est passé en quarantaine
+                  <FileSpreadsheet size={13} className="mt-0.5 shrink-0" /> {tr('Reçus : noms, tailles et liens de tout ce qui est passé en quarantaine')}
                 </button>
               )}
             </div>
 
-            {!history?.batches.length && <div className="text-muted">Aucune action pour l'instant.</div>}
+            {!history?.batches.length && <div className="text-muted">{tr("Aucune action pour l'instant.")}</div>}
             <ol className="relative space-y-1 border-l border-line pl-4">
               {history?.batches.map((b) => (
                 <li key={b.id} className="relative py-2">
@@ -126,19 +127,19 @@ export function HistoryPanel({ open, history, onClose, onUndo, onPurge, onPurgeB
                       <div className={`text-[13.5px] font-medium leading-snug ${b.state !== 'done' ? 'text-muted line-through' : ''}`}>{b.label}</div>
                       <div className="mt-0.5 font-mono text-[11px] text-muted">
                         {fmtDateTime(b.created)} · {plural(b.count, 'élément')} · {fmtBytes(b.bytes)}
-                        {b.errors ? ` · ${b.errors} err.` : ''}
-                        {b.state === 'undone' ? ' · annulé' : b.state === 'purged' ? ' · purgé' : ''}
+                        {b.errors ? ` · ${tr('{n} err.', { n: b.errors })}` : ''}
+                        {b.state === 'undone' ? ` · ${tr('annulé')}` : b.state === 'purged' ? ` · ${tr('purgé')}` : ''}
                       </div>
                     </div>
                     {b.state === 'done' && (
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <button type="button" onClick={() => onUndo(b.id)} className="flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[12px] hover:bg-paper">
-                          <Undo2 size={12} /> Annuler
+                          <Undo2 size={12} /> {tr('Annuler')}
                         </button>
                         {b.action === 'quarantine' && (
                           <HoldButton color={TARGET_STYLE.quarantine.color} onConfirm={() => onPurgeBatch(b.id)} duration={1.2}
                             className="!px-2.5 !py-1 !text-[11.5px] !font-medium">
-                            <Trash2 size={12} /> Maintenir : supprimer
+                            <Trash2 size={12} /> {tr('Maintenir : supprimer')}
                           </HoldButton>
                         )}
                       </div>
@@ -169,7 +170,7 @@ function ContentsView({ entry }: { entry: Entry }) {
   return (
     <div className="scroll-area flex h-full flex-col gap-5 overflow-y-auto p-6">
       <div>
-        <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Contenu</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{tr('Contenu')}</div>
         <div className="mt-1 text-[24px] font-semibold tracking-tight">
           {plural(data.files, 'fichier')} · {fmtBytes(data.bytes)}{data.truncated ? '+' : ''}
         </div>
@@ -187,7 +188,7 @@ function ContentsView({ entry }: { entry: Entry }) {
         ))}
       </div>
       <div>
-        <div className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Plus gros fichiers</div>
+        <div className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{tr('Plus gros fichiers')}</div>
         <ul className="divide-y divide-line text-[12.5px]">
           {data.top.map((f) => (
             <li key={f.name} className="flex gap-3 py-1.5">
@@ -226,7 +227,7 @@ export function QuickLook({ entry, bucket, onClose, onOpen, onReveal }: { entry:
             ref={ref}
             role="dialog"
             aria-modal="true"
-            aria-label={`Aperçu de ${e.name}`}
+            aria-label={tr('Aperçu de {name}', { name: e.name })}
             className="flex max-h-full w-full max-w-[1020px] overflow-hidden rounded-[28px] border border-line bg-surface-strong shadow-2xl"
             style={{ '--c': family(e.ext, e.is_dir).color } as CSSProperties}
           >
@@ -236,27 +237,27 @@ export function QuickLook({ entry, bucket, onClose, onOpen, onReveal }: { entry:
             <div className="flex w-[330px] shrink-0 flex-col gap-4 p-6">
               <div className="flex items-start gap-2">
                 <h3 className="min-w-0 flex-1 break-all text-[19px] font-semibold leading-tight tracking-tight">{e.name}</h3>
-                <button type="button" onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-paper" aria-label="Fermer"><X size={16} /></button>
+                <button type="button" onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-paper" aria-label={tr('Fermer')}><X size={16} /></button>
               </div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
-                {bucket && <><dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Lot</dt><dd>{bucket}</dd></>}
-                <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Taille</dt><dd>{fmtBytes(e.size)}</dd>
-                <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Arrivé</dt><dd>{fmtDate(e.mtime)}</dd>
-                <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Type</dt>
-                <dd>{e.is_dir ? `dossier · ${plural(e.files, 'fichier')}` : e.parts > 1 ? `export en ${e.parts} zips` : e.ext || '—'}</dd>
+                {bucket && <><dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Lot')}</dt><dd>{bucket}</dd></>}
+                <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Taille')}</dt><dd>{fmtBytes(e.size)}</dd>
+                <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Arrivé')}</dt><dd>{fmtDate(e.mtime)}</dd>
+                <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Type')}</dt>
+                <dd>{e.is_dir ? tr('dossier · {files}', { files: plural(e.files, 'fichier') }) : e.parts > 1 ? tr('export en {n} zips', { n: e.parts }) : e.ext || '—'}</dd>
                 {src && (
                   <>
-                    <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Source</dt>
+                    <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Source')}</dt>
                     <dd>
                       {src.label}
-                      {src.redownloadable && <span className="ml-1.5 text-[var(--c-gdrive)]">· retéléchargeable</span>}
-                      {src.expirable && <span className="ml-1.5 text-[var(--c-documents)]">· lien expiré</span>}
+                      {src.redownloadable && <span className="ml-1.5 text-[var(--c-gdrive)]">· {tr('retéléchargeable')}</span>}
+                      {src.expirable && <span className="ml-1.5 text-[var(--c-documents)]">· {tr('lien expiré')}</span>}
                     </dd>
                   </>
                 )}
                 {src?.url && (
                   <>
-                    <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Lien</dt>
+                    <dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Lien')}</dt>
                     <dd className="min-w-0">
                       <a href={src.page ?? src.url} target="_blank" rel="noreferrer" className="block truncate font-mono text-[11.5px] underline decoration-line underline-offset-2 hover:decoration-ink" title={src.url}>
                         {src.page ?? src.url}
@@ -264,18 +265,18 @@ export function QuickLook({ entry, bucket, onClose, onOpen, onReveal }: { entry:
                     </dd>
                   </>
                 )}
-                {e.reason && <><dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Note</dt><dd>{e.reason}</dd></>}
-                {e.dest && <><dt className="font-mono text-[11px] uppercase tracking-wider text-muted">Vers</dt><dd className="break-all font-mono text-[11.5px]">{e.dest}</dd></>}
+                {e.reason && <><dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Note')}</dt><dd>{e.reason}</dd></>}
+                {e.dest && <><dt className="font-mono text-[11px] uppercase tracking-wider text-muted">{tr('Vers')}</dt><dd className="break-all font-mono text-[11.5px]">{e.dest}</dd></>}
               </dl>
               <div className="mt-auto flex gap-2">
                 <button type="button" onClick={() => onOpen(e.id)} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-4 py-2.5 text-[13px] font-semibold text-bg">
-                  <ExternalLink size={14} /> Ouvrir
+                  <ExternalLink size={14} /> {tr('Ouvrir')}
                 </button>
                 <button type="button" onClick={() => onReveal(e.id)} className="flex flex-1 items-center justify-center gap-2 rounded-full border border-line px-4 py-2.5 text-[13px] font-medium hover:bg-paper">
-                  <FolderSearch size={14} /> Explorateur
+                  <FolderSearch size={14} /> {tr('Explorateur')}
                 </button>
               </div>
-              <div className="font-mono text-[11px] text-muted">Espace ou Échap pour fermer</div>
+              <div className="font-mono text-[11px] text-muted">{tr('Espace ou Échap pour fermer')}</div>
             </div>
           </motion.div>
         </motion.div>

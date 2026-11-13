@@ -14,9 +14,12 @@ from typing import Callable
 
 from .actions import Journal, Op
 from .config import Config
+from .i18n import tr
 from .receipts import RECEIPT_NAME, write_receipts
 from .rules import QUARANTINE, TARGETS, build_plan, target_dest
 from .scanner import scan
+
+AUTO_PREFIX = "Auto · "  # jamais traduit : l'interface et server.py reconnaissent les lots du tri auto à ce préfixe
 
 # Action autorisée → lots concernés
 ACTION_BUCKETS = {
@@ -125,11 +128,11 @@ class AutoSorter:
                         if ok:
                             why = None
                         elif e.item.members:
-                            why = "export en plusieurs parties : à trier à la main"
+                            why = tr("export en plusieurs parties : à trier à la main")
                         elif bucket.key not in allowed or not bucket.target:
-                            why = f"« {bucket.title} » n'est pas trié automatiquement"
+                            why = tr("« {title} » n'est pas trié automatiquement", title=bucket.title)
                         else:
-                            why = e.reason or "décoché par sécurité"
+                            why = e.reason or tr("décoché par sécurité")
                         out.append({"name": e.item.name, "size": e.item.size, "is_dir": e.item.is_dir, "ext": e.item.ext,
                                     "arrived": e.item.mtime, "due": e.item.mtime + delay, "bucket": bucket.title,
                                     "target": bucket.target if ok else None, "skip": why})
@@ -147,7 +150,7 @@ class AutoSorter:
         try:
             self.compute_preview()
         except Exception as e:  # l'aperçu ne doit jamais casser l'appli
-            self.last_error = f"aperçu : {e}"
+            self.last_error = tr("aperçu : {error}", error=e)
 
     def run_once(self, now: float | None = None) -> list[dict]:
         """Une passe de tri. Renvoie les lots appliqués."""
@@ -180,9 +183,9 @@ class AutoSorter:
         return batches
 
     def _apply(self, tkey: str, entries: list) -> dict:
-        label_t = "Quarantaine" if tkey == QUARANTINE else TARGETS[tkey].label
+        label_t = tr("Quarantaine") if tkey == QUARANTINE else TARGETS[tkey].label
         titles = sorted({b.title for b, _ in entries})
-        label = f"Auto · {', '.join(titles)} → {label_t}"
+        label = f"{AUTO_PREFIX}{', '.join(titles)} → {label_t}"  # préfixe identique dans toutes les langues
         ops = [Op(e.item.path, str(d) if (d := target_dest(tkey, e.item, self.cfg)) else None, e.item.size,
                   e.item.mtime, e.item.is_dir) for _, e in entries]
         result = self.journal.apply(label, QUARANTINE if tkey == QUARANTINE else "move", ops)

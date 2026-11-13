@@ -7,9 +7,9 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import Config
+from .config import Config, archive_dir_name
+from .i18n import tr
 
-ARCHIVE_DIR = "Téléchargements archivés"
 DRIVE_REMOVABLE, DRIVE_FIXED = 2, 3
 
 
@@ -50,6 +50,7 @@ def _free(path: Path) -> int | None:
 
 
 def find_remotes(cfg: Config) -> list[Remote]:
+    archive_dir = archive_dir_name()  # « Téléchargements archivés » / « Archived downloads »
     system = os.environ.get("SystemDrive", "C:")[0].upper()
     drives = _drives() if cfg.detect_remote else []
 
@@ -57,12 +58,12 @@ def find_remotes(cfg: Config) -> list[Remote]:
     for letter, _, label in drives:
         for name in ("My Drive", "Mon Drive", "Mon disque"):
             if (Path(f"{letter}:/") / name).is_dir():
-                gdrive = Path(f"{letter}:/") / name / ARCHIVE_DIR
+                gdrive = Path(f"{letter}:/") / name / archive_dir
                 break
         if gdrive:
             break
 
-    external, ext_label = cfg.external_dest, "Disque externe"
+    external, ext_label = cfg.external_dest, tr("Disque externe")
     if external is not None and not Path(external.anchor).exists():
         external = None
     if external is None:
@@ -71,18 +72,19 @@ def find_remotes(cfg: Config) -> list[Remote]:
                 continue
             if label.lower().startswith("google drive"):
                 continue
-            external, ext_label = Path(f"{letter}:\\") / ARCHIVE_DIR, f"{label or 'Disque'} ({letter}:)"
+            external, ext_label = Path(f"{letter}:\\") / archive_dir, f"{label or tr('Disque')} ({letter}:)"
             break
 
     onedrive = cfg.onedrive_dest if cfg.onedrive_dest and cfg.onedrive_dest.parent.exists() else None
     return [
-        Remote("onedrive", "OneDrive", onedrive, None,
-               "Envoyé puis rendu « en ligne uniquement » : l'espace local est libéré après la synchro."
-               if onedrive else "OneDrive n'est pas configuré sur ce PC."),
-        Remote("gdrive", "Google Drive", gdrive, _free(gdrive) if gdrive else None,
-               "Copié dans Google Drive pour ordinateur, puis supprimé d'ici." if gdrive else "Lance Google Drive pour ordinateur."),
+        Remote("onedrive", tr("OneDrive"), onedrive, None,
+               tr("Envoyé puis rendu « en ligne uniquement » : l'espace local est libéré après la synchro.")
+               if onedrive else tr("OneDrive n'est pas configuré sur ce PC.")),
+        Remote("gdrive", tr("Google Drive"), gdrive, _free(gdrive) if gdrive else None,
+               tr("Copié dans Google Drive pour ordinateur, puis supprimé d'ici.") if gdrive
+               else tr("Lance Google Drive pour ordinateur.")),
         Remote("external", ext_label, external, _free(external) if external else None,
-               "Copié sur le disque, vérifié, puis supprimé d'ici." if external else "Branche un disque externe."),
+               tr("Copié sur le disque, vérifié, puis supprimé d'ici.") if external else tr("Branche un disque externe.")),
     ]
 
 

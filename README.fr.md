@@ -12,7 +12,7 @@
   <a href="README.md">Read in English</a>
 </p>
 
-![Tri du dossier Téléchargements : lots à gauche, cartes avec miniatures, dock de dossiers en bas](docs/screenshot-sort.jpg)
+![Tri du dossier Téléchargements : lots à gauche, cartes avec miniatures, dock de dossiers en bas](docs/screenshot-sort.fr.jpg)
 
 Le dossier Téléchargements se remplit d'installeurs lancés une fois, de zips déjà extraits, du même fichier téléchargé trois fois et de gros exports qu'on pourrait récupérer à nouveau. Downloads Manager le scanne, range tout par lots et permet de vider chaque lot d'un geste, sans risque.
 
@@ -25,9 +25,10 @@ Le dossier Téléchargements se remplit d'installeurs lancés une fois, de zips 
 - **Tri automatique, en option** : éteint par défaut. Une fois activé, il ne touche qu'aux fichiers qui arrivent ensuite, attend le délai choisi (1 à 30 jours), ne touche jamais aux dossiers ni aux noms sensibles (factures, contrats…), et montre ce qui attend son tour.
 - **Miniatures natives** de l'Explorateur Windows, aperçu rapide avec la barre d'espace, utilisable au clavier.
 - **Lim**, un petit robot guide, fait le tour de l'appli au premier lancement.
+- **Français et anglais** : l'appli suit la langue de Windows ; `"language": "fr"` ou `"en"` dans `config.json` pour en forcer une.
 - **Tout reste sur ton PC** : sa propre fenêtre, une icône près de l'horloge, des notifications Windows. Pas de compte, pas de cloud, aucune donnée envoyée : le serveur local ne répond que sur `127.0.0.1`.
 
-![Lim, le robot guide, montre la liste des lots pendant la visite du premier lancement](docs/screenshot-lim.jpg)
+![Lim, le robot guide, montre la liste des lots pendant la visite du premier lancement](docs/screenshot-lim.fr.jpg)
 
 ## Installation
 

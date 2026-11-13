@@ -7,6 +7,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from .config import FROZEN, PROJECT_DIR as PROJECT
+from .i18n import tr
 
 APPDATA = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
 START_MENU = APPDATA / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Downloads Manager.lnk"
@@ -101,14 +102,14 @@ def startup_enabled() -> bool:
 
 def set_startup(enabled: bool):
     if enabled:
-        _make_shortcut(STARTUP, "--hidden", "Downloads Manager : tri automatique au démarrage")
+        _make_shortcut(STARTUP, "--hidden", tr("Downloads Manager : tri automatique au démarrage"))
     elif STARTUP.exists():
         STARTUP.unlink()
 
 
 def install():
     """Menu Démarrer + lancement à l'ouverture de session."""
-    _make_shortcut(START_MENU, "", "Downloads Manager : trier le dossier Téléchargements")
+    _make_shortcut(START_MENU, "", tr("Downloads Manager : trier le dossier Téléchargements"))
     set_startup(True)
 
 
@@ -126,7 +127,7 @@ def points_here(path: Path) -> bool:
 def refresh():
     """Au lancement de l'exe : les raccourcis existants sont repointés vers lui (ex. après passage des sources à l'exe)."""
     if not points_here(START_MENU):
-        _make_shortcut(START_MENU, "", "Downloads Manager : trier le dossier Téléchargements")
+        _make_shortcut(START_MENU, "", tr("Downloads Manager : trier le dossier Téléchargements"))
     if STARTUP.exists() and not points_here(STARTUP):
         set_startup(True)
 
