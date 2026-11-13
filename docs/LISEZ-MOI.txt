@@ -1,14 +1,14 @@
-Downloads Manager — trie ton dossier Téléchargements
+Lim — trie ton dossier Téléchargements
 
 Installation
 1. Dézippe le dossier où tu veux (par exemple dans Documents).
-2. Double-clique sur « Downloads Manager.exe ».
+2. Double-clique sur « Lim.exe ».
 3. Windows affiche « Windows a protégé votre ordinateur » (l'exe n'est pas signé) :
    clique sur « Informations complémentaires », puis « Exécuter quand même ».
 4. L'appli s'ouvre dans sa propre fenêtre. Clique sur « Scanner ».
    Fermer la fenêtre (croix) la range près de l'horloge : un clic sur l'icône la rouvre.
 
-Au premier lancement, l'exe crée un raccourci « Downloads Manager » dans le menu Démarrer
+Au premier lancement, l'exe crée un raccourci « Lim » dans le menu Démarrer
 et se lance tout seul (icône près de l'horloge) à l'ouverture de Windows.
 Pour couper ce lancement : clic droit sur l'icône près de l'horloge.
 

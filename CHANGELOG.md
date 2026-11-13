@@ -2,7 +2,7 @@
 
 ## 1.0.0 (2026-11-13)
 
-First public version.
+First public version, under the name Lim (formerly Downloads Manager).
 
 - Batches: exact duplicates, extracted zips, old installers, already backed up, partial downloads, re-downloadable files, sorting by type.
 - 30-day quarantine visible in the app: restore one file or a whole batch, delete a batch, empty everything.

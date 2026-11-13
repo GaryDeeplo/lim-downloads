@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .i18n import set_language, tr
 
-FROZEN = getattr(sys, "frozen", False)  # lancé depuis Downloads Manager.exe
+FROZEN = getattr(sys, "frozen", False)  # lancé depuis Lim.exe
 PROJECT_DIR = Path(sys.executable).parent if FROZEN else Path(__file__).resolve().parent.parent
 CONFIG_FILE = PROJECT_DIR / "config.json"  # à côté de l'exe, ou à la racine du projet
 

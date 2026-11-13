@@ -17,7 +17,7 @@ class AppWindow:
         self.quitting = False
         self.ready = threading.Event()
         self.win = webview.create_window(
-            "Downloads Manager", url, width=1440, height=900, min_size=(960, 640), maximized=not hidden,
+            "Lim", url, width=1440, height=900, min_size=(960, 640), maximized=not hidden,
             hidden=hidden, text_select=True, draggable=True, background_color="#121211",
         )
         self.win.events.closing += self._closing

@@ -82,7 +82,7 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     journal = Journal(cfg)
     thumbs = ThumbCache(cfg.data_dir / "miniatures")
     receipts_path = cfg.documents_dest / RECEIPT_NAME
-    app = FastAPI(title="Downloads Manager")
+    app = FastAPI(title="Lim")
 
     @app.middleware("http")
     async def local_only(request: Request, call_next):

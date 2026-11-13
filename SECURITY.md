@@ -1,6 +1,6 @@
 # Security policy
 
-Downloads Manager moves and deletes files on your computer, so security reports matter.
+Lim moves and deletes files on your computer, so security reports matter.
 
 Please do not open a public issue for a vulnerability. Use GitHub's private reporting instead: **Security** tab, then **Report a vulnerability**. Describe the issue and how to reproduce it; you will get an answer within a week.
 

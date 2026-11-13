@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="docs/icon.png" width="96" alt="Downloads Manager icon: Lim the robot peeking out of an orange folder">
+  <img src="docs/icon.png" width="96" alt="Lim icon: a little robot peeking out of an orange folder">
 </p>
 
-<h1 align="center">Downloads Manager</h1>
+<h1 align="center">Lim</h1>
 
 <p align="center">
-  <b>Clean up your Windows Downloads folder in minutes. Nothing is ever deleted without a 30-day undo.</b>
+  <b>Tidy up your Windows Downloads folder in minutes.<br>Nothing is ever deleted without a 30-day undo.</b>
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/GaryDeeplo/downloads-manager?label=download&color=ff5a1f"></a>
+  <a href="../../releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/GaryDeeplo/lim-downloads?label=download&color=ff5a1f"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2e72b3"></a>
 </p>
@@ -20,7 +20,7 @@
 
 ![Sorting the Downloads folder: batches on the left, file cards with thumbnails, folder dock at the bottom](docs/screenshot-sort.jpg)
 
-Your Downloads folder fills up with installers you ran once, zips you already extracted, the same file downloaded three times and huge exports you could grab again. Downloads Manager scans it, sorts everything into batches and lets you clear each batch with one gesture, safely.
+Your Downloads folder fills up with installers you ran once, zips you already extracted, the same file downloaded three times and huge exports you could grab again. Lim scans it, sorts everything into batches and lets you clear each batch with one gesture, safely.
 
 ## Features
 
@@ -30,7 +30,7 @@ Your Downloads folder fills up with installers you ran once, zips you already ex
 - **Every action can be undone** from the history, even days later.
 - **Optional auto-sort.** Off by default. When you turn it on, it only touches files that arrive afterwards, waits the delay you choose (1 to 30 days), never touches folders or sensitive names (invoices, contracts…), and shows you what is waiting and when.
 - **Native thumbnails** from Windows Explorer, quick preview with the space bar, keyboard support.
-- **Lim**, a small robot guide, walks you through the app on first launch.
+- **Lim**, the little robot, walks you through the app on first launch.
 - **English and French.** The app follows your Windows language; switch any time with the FR / EN button in the header.
 - **Runs locally.** Its own window, an icon next to the clock, Windows notifications. No account, no cloud, no telemetry: the local server only answers on `127.0.0.1`.
 
@@ -38,8 +38,8 @@ Your Downloads folder fills up with installers you ran once, zips you already ex
 
 ## Download
 
-1. Download `Downloads-Manager.zip` from the [latest release](../../releases/latest) and unzip it.
-2. Run `Downloads Manager.exe`. The exe is not code-signed yet, so Windows SmartScreen may warn you: click **More info**, then **Run anyway**.
+1. Download `Lim.zip` from the [latest release](../../releases/latest) and unzip it.
+2. Run `Lim.exe`. The exe is not code-signed yet, so Windows SmartScreen may warn you: click **More info**, then **Run anyway**.
 3. Click **Scan**.
 
 On first launch the app adds a Start menu shortcut and starts with Windows (icon only, next to the clock). You can turn that off from the icon's right-click menu. Closing the window keeps the app next to the clock; use **Quit** in that menu to stop it.
@@ -61,8 +61,8 @@ Settings (target folders, delays, sensitive words) can be overridden in a `confi
 ## Build from source
 
 ```bat
-git clone https://github.com/GaryDeeplo/downloads-manager
-cd downloads-manager
+git clone https://github.com/GaryDeeplo/lim-downloads
+cd lim-downloads
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
 start.bat

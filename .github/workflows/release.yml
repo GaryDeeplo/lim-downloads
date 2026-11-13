@@ -33,8 +33,9 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item docs/LISEZ-MOI.txt dist/
-          Compress-Archive -Path "dist/Downloads Manager.exe", "dist/LISEZ-MOI.txt" -DestinationPath dist/Downloads-Manager.zip
+          Copy-Item docs/README.txt dist/
+          Compress-Archive -Path "dist/Lim.exe", "dist/README.txt", "dist/LISEZ-MOI.txt" -DestinationPath dist/Lim.zip
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/Downloads-Manager.zip
+          files: dist/Lim.zip
           generate_release_notes: true

@@ -176,15 +176,15 @@ EN: dict[str, str] = {
     "Ouvrir": "Open",
     "Tri automatique annulé": "Auto-sort undone",
     "Les fichiers sont revenus dans Téléchargements.": "The files are back in Downloads.",
-    "Ouvrir Downloads Manager": "Open Downloads Manager",
+    "Ouvrir Lim": "Open Lim",
     "Tri automatique": "Auto-sort",
     "Trier maintenant": "Sort now",
     "Lancer au démarrage de Windows": "Start with Windows",
     "Quitter": "Quit",
 
     # — Raccourcis Windows (autostart.py) —
-    "Downloads Manager : tri automatique au démarrage": "Downloads Manager: auto-sort at startup",
-    "Downloads Manager : trier le dossier Téléchargements": "Downloads Manager: tidy up the Downloads folder",
+    "Lim : tri automatique au démarrage": "Lim: auto-sort at startup",
+    "Lim : trier le dossier Téléchargements": "Lim: tidy up the Downloads folder",
 
     # — Reçus de quarantaine (receipts.py) —
     "date": "date",

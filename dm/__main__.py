@@ -55,7 +55,7 @@ def notifier(app, open_ui):
         from windows_toasts import InteractableWindowsToaster, Toast, ToastButton
     except ImportError:
         return None
-    toaster = InteractableWindowsToaster("Downloads Manager")
+    toaster = InteractableWindowsToaster("Lim")
 
     def notify(batches: list[dict]):
         n = sum(b["done"] for b in batches)
@@ -153,14 +153,14 @@ def main():
             window.quit()
 
     menu = pystray.Menu(
-        pystray.MenuItem(tr("Ouvrir Downloads Manager"), lambda: open_ui(), default=True),
+        pystray.MenuItem(tr("Ouvrir Lim"), lambda: open_ui(), default=True),
         pystray.MenuItem(tr("Tri automatique"), toggle, checked=lambda _: auto.enabled),
         pystray.MenuItem(tr("Trier maintenant"), run_now),
         pystray.MenuItem(tr("Lancer au démarrage de Windows"), toggle_startup, checked=lambda _: startup_enabled()),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(tr("Quitter"), quit_app),
     )
-    tray = pystray.Icon("downloads-manager", app_icon(64), "Downloads Manager", menu)
+    tray = pystray.Icon("lim", app_icon(64), "Lim", menu)
     if window:  # la fenêtre a besoin du fil principal ; l'icône tourne à côté
         tray.run_detached()
         window.run()

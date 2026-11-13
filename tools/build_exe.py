@@ -1,4 +1,4 @@
-"""Construit dist/Downloads Manager.exe (un seul fichier, sans console).
+"""Construit dist/Lim.exe (un seul fichier, sans console).
 
 Usage : .venv\\Scripts\\python tools\\build_exe.py   (reconstruit d'abord l'interface si `web/` a changé : npm run build)
 """
@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ICON = ROOT / "assets" / "downloads-manager.ico"
+ICON = ROOT / "assets" / "lim.ico"
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     shutil.rmtree(ROOT / "build", ignore_errors=True)
     subprocess.run([
         sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--windowed",
-        "--name", "Downloads Manager",
+        "--name", "Lim",
         "--icon", str(ICON),
         "--add-data", f"{ROOT / 'dm' / 'static'};dm/static",
         "--collect-submodules", "uvicorn",
@@ -34,7 +34,7 @@ def main():
         "--specpath", str(ROOT / "build"),
         str(ROOT / "launcher.py"),
     ], check=True, cwd=ROOT)
-    print(f"\nOK : {ROOT / 'dist' / 'Downloads Manager.exe'}")
+    print(f"\nOK : {ROOT / 'dist' / 'Lim.exe'}")
 
 
 if __name__ == "__main__":

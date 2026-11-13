@@ -187,7 +187,7 @@ export function Header({ root, buckets, scanning, historyCount, auto, onScan, on
           <span className="absolute bottom-[23px] left-0 h-2 w-4 rounded-t-[4px] bg-accent" />
         </div>
         <div className="min-w-0">
-          <div className="text-[17px] font-bold leading-none tracking-[-0.03em]">Downloads Manager</div>
+          <div className="text-[17px] font-bold leading-none tracking-[-0.03em]">Lim</div>
           <div className="mt-1 max-w-[34ch] truncate font-mono text-[12px] text-muted" title={root}>{root}</div>
         </div>
       </div>

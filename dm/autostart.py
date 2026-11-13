@@ -10,9 +10,11 @@ from .config import FROZEN, PROJECT_DIR as PROJECT
 from .i18n import tr
 
 APPDATA = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
-START_MENU = APPDATA / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Downloads Manager.lnk"
-STARTUP = APPDATA / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup" / "Downloads Manager.lnk"
-ICON = (Path(sys.executable) if FROZEN else PROJECT / "assets" / "downloads-manager.ico")  # l'exe porte son icône
+PROGRAMS = APPDATA / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+START_MENU = PROGRAMS / "Lim.lnk"
+STARTUP = PROGRAMS / "Startup" / "Lim.lnk"
+OLD_START_MENU, OLD_STARTUP = PROGRAMS / "Downloads Manager.lnk", PROGRAMS / "Startup" / "Downloads Manager.lnk"  # ancien nom
+ICON = (Path(sys.executable) if FROZEN else PROJECT / "assets" / "lim.ico")  # l'exe porte son icône
 
 
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256)
@@ -102,14 +104,14 @@ def startup_enabled() -> bool:
 
 def set_startup(enabled: bool):
     if enabled:
-        _make_shortcut(STARTUP, "--hidden", tr("Downloads Manager : tri automatique au démarrage"))
+        _make_shortcut(STARTUP, "--hidden", tr("Lim : tri automatique au démarrage"))
     elif STARTUP.exists():
         STARTUP.unlink()
 
 
 def install():
     """Menu Démarrer + lancement à l'ouverture de session."""
-    _make_shortcut(START_MENU, "", tr("Downloads Manager : trier le dossier Téléchargements"))
+    _make_shortcut(START_MENU, "", tr("Lim : trier le dossier Téléchargements"))
     set_startup(True)
 
 
@@ -125,9 +127,15 @@ def points_here(path: Path) -> bool:
 
 
 def refresh():
-    """Au lancement de l'exe : les raccourcis existants sont repointés vers lui (ex. après passage des sources à l'exe)."""
+    """Au lancement de l'exe : les raccourcis existants sont repointés vers lui (ex. après passage des sources à l'exe).
+    Les raccourcis de l'ancien nom « Downloads Manager » sont remplacés par ceux de Lim, démarrage compris."""
+    if OLD_STARTUP.exists():
+        OLD_STARTUP.unlink()
+        set_startup(True)
+    if OLD_START_MENU.exists():
+        OLD_START_MENU.unlink()
     if not points_here(START_MENU):
-        _make_shortcut(START_MENU, "", tr("Downloads Manager : trier le dossier Téléchargements"))
+        _make_shortcut(START_MENU, "", tr("Lim : trier le dossier Téléchargements"))
     if STARTUP.exists() and not points_here(STARTUP):
         set_startup(True)
 
