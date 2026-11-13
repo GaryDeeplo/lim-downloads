@@ -58,4 +58,4 @@ Réglages (dossiers cibles, délais, mots sensibles) : un `config.json` à côt�
 
 ## Licence
 
-[MIT](LICENSE)
+[MIT](LICENSE). Composants open source embarqués et leurs licences : [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

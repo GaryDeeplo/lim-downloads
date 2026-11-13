@@ -33,8 +33,8 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item docs/LISEZ-MOI.txt dist/
-          Copy-Item docs/README.txt dist/
-          Compress-Archive -Path "dist/Lim.exe", "dist/README.txt", "dist/LISEZ-MOI.txt" -DestinationPath dist/Lim.zip
+          Copy-Item docs/README.txt, THIRD_PARTY_NOTICES.md dist/
+          Compress-Archive -Path "dist/Lim.exe", "dist/README.txt", "dist/LISEZ-MOI.txt", "dist/THIRD_PARTY_NOTICES.md" -DestinationPath dist/Lim.zip
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/Lim.zip

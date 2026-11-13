@@ -78,4 +78,4 @@ Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBU
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Bundled open-source components and their licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
