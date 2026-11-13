@@ -132,7 +132,7 @@ export type Quarantine = { days: number; dir: string; batches: QuarantineBatch[]
 async function req<T>(path: string, body?: unknown, method?: string): Promise<T> {
   const r = await fetch(path, {
     method: method ?? (body === undefined ? 'GET' : 'POST'),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Downloads-Manager': '1' },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (!r.ok) {

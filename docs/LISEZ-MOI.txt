@@ -1,0 +1,22 @@
+Downloads Manager — trie ton dossier Téléchargements
+
+Installation
+1. Dézippe le dossier où tu veux (par exemple dans Documents).
+2. Double-clique sur « Downloads Manager.exe ».
+3. Windows affiche « Windows a protégé votre ordinateur » (l'exe n'est pas signé) :
+   clique sur « Informations complémentaires », puis « Exécuter quand même ».
+4. L'appli s'ouvre dans sa propre fenêtre. Clique sur « Scanner ».
+   Fermer la fenêtre (croix) la range près de l'horloge : un clic sur l'icône la rouvre.
+
+Au premier lancement, l'exe crée un raccourci « Downloads Manager » dans le menu Démarrer
+et se lance tout seul (icône près de l'horloge) à l'ouverture de Windows.
+Pour couper ce lancement : clic droit sur l'icône près de l'horloge.
+
+À savoir
+- Rien n'est supprimé directement : tout passe 30 jours en quarantaine, chaque action s'annule.
+- Le tri automatique est éteint au départ : le bouton « Régler le tri auto » en haut le configure.
+- Lim, le petit robot, fait le tour de l'appli au premier lancement ; sa tête en haut à droite le rappelle.
+- Tes données (historique, quarantaine) sont dans %LOCALAPPDATA%\DownloadsManager.
+
+Ne déplace pas l'exe après le premier lancement : les raccourcis pointent vers son emplacement.
+(Si tu le déplaces, relance-le une fois depuis son nouvel emplacement : il remet les raccourcis à jour.)

@@ -16,7 +16,7 @@ import uvicorn
 
 from .autostart import ICON, app_icon, refresh, set_startup, startup_enabled
 from .config import load_config
-from .server import create_app
+from .server import APP_HEADER, create_app
 
 PORT = int(os.environ.get("DM_PORT", 8765))  # DM_PORT : autre instance (démo)
 URL = f"http://127.0.0.1:{PORT}"
@@ -30,7 +30,7 @@ def already_running() -> bool:
 def show_running():
     """Deuxième lancement : demande à l'appli déjà ouverte de montrer sa fenêtre (navigateur si elle n'en a pas)."""
     try:
-        with urllib.request.urlopen(urllib.request.Request(f"{URL}/api/show", method="POST"), timeout=5) as r:
+        with urllib.request.urlopen(urllib.request.Request(f"{URL}/api/show", method="POST", headers={APP_HEADER: "1"}), timeout=5) as r:
             if json.load(r).get("window"):
                 return
     except (OSError, ValueError):
@@ -71,7 +71,7 @@ def notifier(app, open_ui):
             if arg.startswith("undo:"):
                 for batch_id in arg[5:].split(","):  # via l'API : même chemin que le bouton Annuler de l'interface
                     try:
-                        urllib.request.urlopen(urllib.request.Request(f"{URL}/api/undo/{batch_id}", method="POST"), timeout=600)
+                        urllib.request.urlopen(urllib.request.Request(f"{URL}/api/undo/{batch_id}", method="POST", headers={APP_HEADER: "1"}), timeout=600)
                     except OSError:
                         pass
                 toaster.show_toast(Toast(["Tri automatique annulé", "Les fichiers sont revenus dans Téléchargements."]))

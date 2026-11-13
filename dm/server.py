@@ -8,8 +8,8 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -49,6 +49,14 @@ def _family(name: str) -> str:
     return next((k for k, _, exts in FAMILIES if ext in exts), "other")
 
 
+LOCAL_HOSTS = {"127.0.0.1", "localhost"}
+APP_HEADER = "X-Downloads-Manager"   # envoyé par l'interface : une page web d'un autre site ne peut pas l'ajouter
+
+
+def _hostname(value: str) -> str:
+    return value.rsplit(":", 1)[0].strip("[]").lower() if value else ""
+
+
 def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     """start_auto : lance la surveillance en tâche de fond (l'appli réelle ; pas les tests)."""
     cfg = cfg or load_config()
@@ -56,6 +64,18 @@ def create_app(cfg: Config | None = None, start_auto: bool = False) -> FastAPI:
     thumbs = ThumbCache(cfg.data_dir / "miniatures")
     receipts_path = cfg.documents_dest / RECEIPT_NAME
     app = FastAPI(title="Downloads Manager")
+
+    @app.middleware("http")
+    async def local_only(request: Request, call_next):
+        """Le serveur n'écoute que sur 127.0.0.1, mais un site ouvert dans le navigateur peut quand même l'appeler.
+        On refuse donc : un nom d'hôte autre que local (attaque par « DNS rebinding »), une origine étrangère,
+        et toute action (POST) sans l'en-tête de l'appli, qu'un autre site ne peut pas envoyer sans autorisation."""
+        host = _hostname(request.headers.get("host", ""))
+        origin = request.headers.get("origin")
+        foreign = origin and _hostname(origin.split("://", 1)[-1]) not in LOCAL_HOSTS
+        if host not in LOCAL_HOSTS or foreign or (request.method != "GET" and request.headers.get(APP_HEADER) != "1"):
+            return JSONResponse({"detail": "requête refusée : réservée à l'interface locale"}, status_code=403)
+        return await call_next(request)
     lock = threading.Lock()          # état du plan
     job_ids = itertools.count(1)
     state = {"status": "idle", "phase": "", "error": None, "buckets": [], "entries": {}, "removed": {},

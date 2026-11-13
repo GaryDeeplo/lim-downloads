@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest -q
+      - name: Build the interface
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Build the exe
+        run: python tools/build_exe.py
+      - name: Zip
+        shell: pwsh
+        run: |
+          Copy-Item docs/LISEZ-MOI.txt dist/
+          Compress-Archive -Path "dist/Downloads Manager.exe", "dist/LISEZ-MOI.txt" -DestinationPath dist/Downloads-Manager.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Downloads-Manager.zip
+          generate_release_notes: true

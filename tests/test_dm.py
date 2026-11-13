@@ -133,8 +133,13 @@ def test_refuses_changed_or_outside_files(cfg, tmp_path):
     assert f.exists() and outside.exists()
 
 
+def local_client(cfg):
+    """Client comme l'interface : adresse locale et en-tête de l'appli."""
+    return TestClient(create_app(cfg), base_url="http://127.0.0.1:8765", headers={"X-Downloads-Manager": "1"})
+
+
 def _ready_client(cfg):
-    client = TestClient(create_app(cfg))
+    client = local_client(cfg)
     client.post("/api/scan")
     for _ in range(100):
         plan = client.get("/api/plan").json()
@@ -369,7 +374,7 @@ def test_auto_disabled_and_reenable_resets_start(cfg):
 
 
 def test_auto_api_and_undo(cfg):
-    client = TestClient(create_app(cfg))
+    client = local_client(cfg)
     assert client.get("/api/auto").json()["enabled"] is True
     assert client.post("/api/auto", json={"enabled": False}).json()["enabled"] is False
     assert client.post("/api/auto/run").json() == {"batches": []}
@@ -486,3 +491,14 @@ def test_auto_off_until_configured(tmp_path):
     auto.update(enabled=True)
     again = AutoSorter(cfg, Journal(cfg))
     assert again.enabled and again.configured and again.delay_hours == 72
+
+
+def test_api_refuses_requests_from_other_sites(cfg):
+    client = TestClient(create_app(cfg), base_url="http://127.0.0.1:8765")
+    assert client.get("/api/history").status_code == 200                             # l'interface lit librement
+    assert client.post("/api/purge?all=true").status_code == 403                     # action sans l'en-tête de l'appli
+    ok = {"X-Downloads-Manager": "1"}
+    assert client.post("/api/purge?all=true", headers=ok | {"Origin": "https://site.example"}).status_code == 403
+    rebind = TestClient(create_app(cfg), base_url="http://attaquant.example:8765")    # DNS rebinding
+    assert rebind.get("/api/history").status_code == 403
+    assert client.post("/api/purge?all=true", headers=ok | {"Origin": "http://127.0.0.1:8765"}).status_code == 200

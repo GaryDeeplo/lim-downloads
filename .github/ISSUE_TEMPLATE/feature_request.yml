@@ -1,0 +1,11 @@
+name: Idea
+description: Suggest a new rule, batch or feature
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like the app to do?
+      description: Describe the clutter you want to handle, with an example if possible.
+    validations:
+      required: true
